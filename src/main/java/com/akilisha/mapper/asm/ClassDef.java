@@ -7,9 +7,10 @@ import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.FieldVisitor;
 
 import java.io.IOException;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
+import java.util.stream.Stream;
 
 import static org.objectweb.asm.Opcodes.ASM9;
 
@@ -27,10 +28,9 @@ public class ClassDef extends ClassVisitor {
 
     public static boolean isJavaType(Class<?> type) {
         return (type.isPrimitive() && type != void.class) ||
-                type == Double.class || type == Float.class || type == Long.class ||
-                type == Integer.class || type == Short.class || type == Character.class ||
-                type == Byte.class || type == Boolean.class || type == String.class ||
-                Number.class.isAssignableFrom(type) || UUID.class.isAssignableFrom(type);
+                Collection.class.isAssignableFrom(type) || //case where a class may be extending one of the collection interfaces
+                Stream.of("java.lang", "java.util", "java.math", "java.io", "java.net", "sun.")
+                        .anyMatch(t -> type.getName().startsWith(t));
     }
 
     public Class<?> detectType(String descriptor) {

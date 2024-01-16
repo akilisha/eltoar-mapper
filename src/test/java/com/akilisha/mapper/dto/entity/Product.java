@@ -1,6 +1,6 @@
-package com.akilisha.mapper.entity;
+package com.akilisha.mapper.dto.entity;
 
-import com.akilisha.mapper.meta.Mappable;
+import com.akilisha.mapper.asm.MapperDest;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -11,7 +11,7 @@ import java.math.BigInteger;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class Product implements Mappable {
+public class Product implements MapperDest {
 
     String itemId;
     String productName;

@@ -1,6 +1,6 @@
-package com.akilisha.mapper.entity;
+package com.akilisha.mapper.dto.entity;
 
-import com.akilisha.mapper.meta.Mappable;
+import com.akilisha.mapper.asm.MapperDest;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -8,7 +8,7 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class Person2 implements Mappable {
+public class Person2 implements MapperDest {
 
     Long id;
     String firstName;

@@ -1,6 +1,6 @@
-package com.akilisha.mapper.entity;
+package com.akilisha.mapper.dto.entity;
 
-import com.akilisha.mapper.meta.Mappable;
+import com.akilisha.mapper.asm.MapperDest;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -8,8 +8,8 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class Phone0 implements Mappable {
+public class Phone1 implements MapperDest {
 
-    String type;
+    Boolean isCell;
     String number;
 }

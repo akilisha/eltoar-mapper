@@ -1,18 +1,19 @@
-package com.akilisha.mapper.entity;
+package com.akilisha.mapper.dto.entity;
 
-import com.akilisha.mapper.meta.MVisitable;
+import com.akilisha.mapper.asm.MapperDest;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class PersonEntity implements MVisitable {
+public class Person3 implements MapperDest {
 
     Long id;
     String firstName;
     String lastName;
-    String phoneNumber;
-    String phoneType;
+    List<Phone0> phones;
 }
