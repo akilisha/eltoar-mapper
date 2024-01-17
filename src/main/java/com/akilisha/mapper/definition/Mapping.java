@@ -1,10 +1,12 @@
-package com.akilisha.mapper.asm;
+package com.akilisha.mapper.definition;
+
+import com.akilisha.mapper.wrapper.DataWrapper;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 
-import static com.akilisha.mapper.asm.Mappings.classDef;
+import static com.akilisha.mapper.definition.Mappings.classDef;
 
 public class Mapping extends HashMap<String, Converter<?>> {
 
@@ -60,6 +62,12 @@ public class Mapping extends HashMap<String, Converter<?>> {
     public void commit(MapperSrc from, MapperDest to) throws Throwable {
         ClassDef fromDef = classDef(from.getClass());
         ClassDef toDef = classDef(to.getClass());
+        Mappings.mapAToB(from, fromDef, to, toDef, this);
+    }
+
+    public void commitWrapped(DataWrapper<?> from, DataWrapper<?> to) throws Throwable {
+        ClassDef fromDef = classDef(from.getThisTarget().getClass());
+        ClassDef toDef = classDef(to.getThisTarget().getClass());
         Mappings.mapAToB(from, fromDef, to, toDef, this);
     }
 }

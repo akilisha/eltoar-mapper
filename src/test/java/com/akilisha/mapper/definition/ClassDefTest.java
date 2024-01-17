@@ -1,4 +1,4 @@
-package com.akilisha.mapper.asm;
+package com.akilisha.mapper.definition;
 
 import com.akilisha.mapper.dto.entity.*;
 import org.junit.jupiter.api.Test;
@@ -8,7 +8,7 @@ import java.math.BigInteger;
 import java.util.List;
 import java.util.UUID;
 
-import static com.akilisha.mapper.asm.Mappings.classDef;
+import static com.akilisha.mapper.definition.Mappings.classDef;
 import static org.assertj.core.api.Assertions.assertThat;
 
 class ClassDefTest {

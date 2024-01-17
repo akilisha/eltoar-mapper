@@ -12,6 +12,7 @@ repositories {
 dependencies {
     // asm
     implementation 'org.ow2.asm:asm:9.6'
+    implementation 'org.ow2.asm:asm-util:9.6'
 
     // logging
     compileOnly 'org.slf4j:slf4j-api:2.0.10'

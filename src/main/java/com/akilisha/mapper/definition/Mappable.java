@@ -1,4 +1,4 @@
-package com.akilisha.mapper.asm;
+package com.akilisha.mapper.definition;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;

@@ -1,6 +1,6 @@
 package com.akilisha.mapper.dto.entity;
 
-import com.akilisha.mapper.asm.MapperDest;
+import com.akilisha.mapper.definition.MapperDest;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;

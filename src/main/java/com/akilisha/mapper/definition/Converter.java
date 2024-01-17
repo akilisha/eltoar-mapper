@@ -1,4 +1,4 @@
-package com.akilisha.mapper.asm;
+package com.akilisha.mapper.definition;
 
 import lombok.Getter;
 

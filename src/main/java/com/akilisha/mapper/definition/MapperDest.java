@@ -1,4 +1,4 @@
-package com.akilisha.mapper.asm;
+package com.akilisha.mapper.definition;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodType;
@@ -9,7 +9,7 @@ public interface MapperDest extends Mappable {
     default void map(String fieldName, Class<?> fieldType, Object fieldValue) throws Throwable {
         MethodType setterMethodType = MethodType.methodType(void.class, fieldType);
         String setter = "set" + Character.toUpperCase(fieldName.charAt(0)) + fieldName.substring(1);
-        MethodHandle setterHandler = lookup.findVirtual(getClass(), setter, setterMethodType);
+        MethodHandle setterHandler = lookup.findVirtual(getThisTarget().getClass(), setter, setterMethodType);
         setterHandler.invoke(getThisTarget(), fieldValue);
     }
 

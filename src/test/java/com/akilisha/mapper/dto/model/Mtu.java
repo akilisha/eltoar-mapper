@@ -11,8 +11,9 @@ import java.math.BigDecimal;
 @AllArgsConstructor
 public class Mtu {
 
-    Long id;
-    String lakwanza;
-    String lamwisho;
-    BigDecimal herufi;
+    long id;
+    String majina;
+    BigDecimal mshahara;
+    boolean pamoja;
+    short siri;
 }

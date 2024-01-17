@@ -1,4 +1,4 @@
-package com.akilisha.mapper.asm;
+package com.akilisha.mapper.definition;
 
 import lombok.Getter;
 import lombok.Setter;
@@ -13,6 +13,7 @@ import java.util.Map;
 import java.util.stream.Stream;
 
 import static org.objectweb.asm.Opcodes.ASM9;
+
 
 @Getter
 @Setter
@@ -29,11 +30,11 @@ public class ClassDef extends ClassVisitor {
     public static boolean isJavaType(Class<?> type) {
         return (type.isPrimitive() && type != void.class) ||
                 Collection.class.isAssignableFrom(type) || //case where a class may be extending one of the collection interfaces
-                Stream.of("java.lang", "java.util", "java.math", "java.io", "java.net", "sun.")
+                Stream.of("java.lang", "java.util", "java.math", "java.io", "java.net", "sun.", "com.sun.")
                         .anyMatch(t -> type.getName().startsWith(t));
     }
 
-    public Class<?> detectType(String descriptor) {
+    public static Class<?> detectType(String descriptor) {
         if (descriptor.contains(".")) {
             try {
                 return Class.forName(descriptor);
@@ -55,6 +56,7 @@ public class ClassDef extends ClassVisitor {
             case "Z" -> boolean.class;
             case "C" -> char.class;
             case "B" -> byte.class;
+            case "S" -> short.class;
             case "I" -> int.class;
             case "F" -> float.class;
             case "J" -> long.class;

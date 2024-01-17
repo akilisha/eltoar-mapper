@@ -1,4 +1,4 @@
-package com.akilisha.mapper.dto.model;
+package com.akilisha.mapper.incubator.sample;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -12,7 +12,8 @@ import java.math.BigDecimal;
 public class User {
 
     Long id;
-    String firstName;
-    String lastName;
-    BigDecimal luckyNumber;
+    String names;
+    BigDecimal salary;
+    boolean accepted;
+    short code;
 }

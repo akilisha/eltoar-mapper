@@ -1,4 +1,4 @@
-package com.akilisha.mapper.sample;
+package com.akilisha.mapper.incubator;
 
 import org.junit.jupiter.api.Test;
 import org.objectweb.asm.ClassReader;
