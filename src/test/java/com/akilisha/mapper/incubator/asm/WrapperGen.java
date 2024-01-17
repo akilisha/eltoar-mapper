@@ -1,5 +1,6 @@
-package com.akilisha.mapper.incubator;
+package com.akilisha.mapper.incubator.asm;
 
+import com.akilisha.mapper.wrapper.DataWrapper;
 import org.objectweb.asm.*;
 
 import java.util.List;
@@ -25,11 +26,12 @@ public class WrapperGen extends ClassVisitor {
     final String targetClassName;
     final String targetClassDescriptor;
     final WrapperLoader wrapperLoader;
+    final String dataWrapperName;
 
     int lineNum = 13;
 
     public WrapperGen(ClassWriter cw, Class<?> genericClass, WrapperLoader wrapperLoader) {
-        super(ASM4);
+        super(ASM9);
         this.cw = cw;
         this.genericClass = genericClass;
         this.genericClassName = genericClass.getName().replace(".", "/");
@@ -37,6 +39,7 @@ public class WrapperGen extends ClassVisitor {
         this.targetClassName = String.format("%s__Wrapper", genericClass.getName().replace(".", "/"));
         this.targetClassDescriptor = String.format("L%s;", this.targetClassName);
         this.wrapperLoader = wrapperLoader;
+        this.dataWrapperName = DataWrapper.class.getName().replace(".", "/");
     }
 
     public static int returnSymbol(String desc) {
@@ -71,7 +74,7 @@ public class WrapperGen extends ClassVisitor {
         methodVisitor.visitLineNumber(9, label0);
         methodVisitor.visitVarInsn(ALOAD, 0);
         methodVisitor.visitVarInsn(ALOAD, 1);
-        methodVisitor.visitMethodInsn(INVOKESPECIAL, "com/akilisha/mapper/wrapper/DataWrapper", "<init>", "(Ljava/lang/Object;)V", false);
+        methodVisitor.visitMethodInsn(INVOKESPECIAL, this.dataWrapperName, "<init>", "(Ljava/lang/Object;)V", false);
         Label label1 = new Label();
         methodVisitor.visitLabel(label1);
         methodVisitor.visitLineNumber(10, label1);
@@ -88,8 +91,8 @@ public class WrapperGen extends ClassVisitor {
         cw.visit(version,
                 access,
                 this.targetClassName,
-                String.format("Lcom/akilisha/mapper/wrapper/DataWrapper<L%s;>;", name),
-                "com/akilisha/mapper/wrapper/DataWrapper",
+                String.format("L%s<L%s;>;", this.dataWrapperName, name),
+                this.dataWrapperName,
                 interfaces);
     }
 
@@ -132,7 +135,6 @@ public class WrapperGen extends ClassVisitor {
     }
 
     public void addSetter(MethodVisitor methodVisitor, String name, String desc, String signature) {
-//        String paramSymbol = desc.replaceAll("\\((.+)\\).*", "$1");
         Label label0 = new Label();
         methodVisitor.visitLabel(label0);
         methodVisitor.visitLineNumber(lineNum, label0);

@@ -1,4 +1,4 @@
-package com.akilisha.mapper.incubator.sample;
+package com.akilisha.mapper.dto.model;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

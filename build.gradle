@@ -9,10 +9,21 @@ repositories {
     mavenCentral()
 }
 
+sourceSets {
+    mapper{
+        java{
+            srcDir 'generated/main/java'
+        }
+    }
+}
+
 dependencies {
     // asm
     implementation 'org.ow2.asm:asm:9.6'
     implementation 'org.ow2.asm:asm-util:9.6'
+
+    //javapoet
+    implementation 'com.squareup:javapoet:1.13.0'
 
     // logging
     compileOnly 'org.slf4j:slf4j-api:2.0.10'

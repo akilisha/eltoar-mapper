@@ -65,7 +65,7 @@ public class Mapping extends HashMap<String, Converter<?>> {
         Mappings.mapAToB(from, fromDef, to, toDef, this);
     }
 
-    public void commitWrapped(DataWrapper<?> from, DataWrapper<?> to) throws Throwable {
+    public void commit(DataWrapper<?> from, DataWrapper<?> to) throws Throwable {
         ClassDef fromDef = classDef(from.getThisTarget().getClass());
         ClassDef toDef = classDef(to.getThisTarget().getClass());
         Mappings.mapAToB(from, fromDef, to, toDef, this);

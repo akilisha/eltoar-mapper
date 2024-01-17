@@ -1,4 +1,4 @@
-package com.akilisha.mapper.incubator.sample;
+package com.akilisha.mapper.dto.model;
 
 import com.akilisha.mapper.wrapper.DataWrapper;
 

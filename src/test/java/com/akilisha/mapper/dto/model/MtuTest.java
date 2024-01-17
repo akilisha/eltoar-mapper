@@ -1,7 +1,7 @@
 package com.akilisha.mapper.dto.model;
 
 import com.akilisha.mapper.definition.Mapping;
-import com.akilisha.mapper.incubator.WrapperLoader;
+import com.akilisha.mapper.incubator.asm.WrapperLoader;
 import com.akilisha.mapper.wrapper.DataWrapper;
 import org.junit.jupiter.api.Test;
 
@@ -17,11 +17,11 @@ public class MtuTest {
         Mtu copy = new Mtu();
 
         //using static wrapper
-        DataWrapper<Mtu> src = new MtuWrap(entity);
-        DataWrapper<Mtu> dest = new MtuWrap(copy);
+        DataWrapper<Mtu> src = new DataWrapper<>(entity);
+        DataWrapper<Mtu> dest = new DataWrapper<>(copy);
 
         //copy values
-        Mapping.init().commitWrapped(src, dest);
+        Mapping.init().commit(src, dest);
 
         //assert values
         assertThat(dest.getThisTarget().getId()).isEqualTo(src.getThisTarget().getId());
