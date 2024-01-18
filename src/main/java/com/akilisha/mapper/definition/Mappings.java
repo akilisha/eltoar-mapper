@@ -1,5 +1,7 @@
 package com.akilisha.mapper.definition;
 
+import com.akilisha.mapper.merge.LRUtils;
+import com.akilisha.mapper.wrapper.ObjWrapper;
 import org.objectweb.asm.ClassReader;
 
 import java.io.IOException;
@@ -19,72 +21,86 @@ public class Mappings {
     public static void mapAToB(MapperSrc source, ClassDef srcDef, MapperDest destination, ClassDef destDef, Mapping mapping) throws Throwable {
         if (source != null && destination != null) {
             //iterate over dest fields
-            for (String destField : destDef.getFields().keySet()) {
-                Object destType = destDef.getFields().get(destField);
-                //identify source field
-                String srcField = Optional.ofNullable(mapping.get(destField)).map(f -> f.fieldName).orElse(destField);
-                Object srcType = srcDef.getFields().get(srcField);
+            if (Map.class.isAssignableFrom(destDef.type)) {
+                copyPropertiesToMap(source, srcDef, destination);
+            } else {
+                for (String destField : destDef.getFields().keySet()) {
+                    Object destType = destDef.getFields().get(destField);
+                    //identify source field
+                    String srcField = Optional.ofNullable(mapping.get(destField)).map(f -> f.fieldName).orElse(destField);
+                    Object srcType = srcDef.getFields().get(srcField);
 
-                if (ClassDef.class != destType.getClass() && (List.class.isAssignableFrom((Class<?>) destType) || Set.class.isAssignableFrom((Class<?>) destType))) {
-                    if (srcType != null) {
-                        assert List.class.isAssignableFrom((Class<?>) srcType); // this line MUST be true as well
-                        Mapping nestedMapping = mapping.get(destField).nestedMapping;
-                        List<MapperSrc> srcListValues = (List) source.get(srcField, (Class<?>) srcType);
-                        if (srcListValues != null) {
-                            for (MapperSrc src : srcListValues) {
-                                MapperDest dest = newInstance(mapping.get(destField).destCollectionType);
-                                nestedMapping.commit(src, dest);
-                                destination.add(destField, (Class<?>) destType, dest);
+                    if (ClassDef.class != destType.getClass() && (List.class.isAssignableFrom((Class<?>) destType) || Set.class.isAssignableFrom((Class<?>) destType))) {
+                        if (srcType != null) {
+                            assert List.class.isAssignableFrom((Class<?>) srcType); // this line MUST be true as well
+                            Mapping nestedMapping = mapping.get(destField).nestedMapping;
+                            List<MapperSrc> srcListValues = (List) source.get(srcField, (Class<?>) srcType);
+                            if (srcListValues != null) {
+                                for (MapperSrc src : srcListValues) {
+                                    MapperDest dest = newInstance(mapping.get(destField).destCollectionType);
+                                    nestedMapping.commit(src, dest);
+                                    destination.add(destField, (Class<?>) destType, dest);
+                                }
                             }
+                        } else {
+                            Mapping nestedMapping = extractNestedDestMapping(mapping, destField);
+                            mapValuesToListItem(source, srcDef, destination, destField, (Class<?>) destType, nestedMapping);
                         }
-                    } else {
-                        Mapping nestedMapping = extractNestedDestMapping(mapping, destField);
-                        mapValuesToListItem(source, srcDef, destination, destField, (Class<?>) destType, nestedMapping);
+                        continue;
                     }
-                    continue;
-                }
 
-                if (destType.equals(srcType)) {
-                    assert srcType instanceof Class<?>;
-                    if (destField.equals(srcField)) {
-                        mapSrcToDestField((Class<?>) srcType, srcField, source, destField, destination, mapping);
-                    } else {
-                        assert destType instanceof Class<?>;
-                        mapSrcToDestField((Class<?>) srcType, srcField, source, (Class<?>) destType, destField, destination, mapping);
+                    if (destType.equals(srcType)) {
+                        assert srcType instanceof Class<?>;
+                        if (destField.equals(srcField)) {
+                            mapSrcToDestField((Class<?>) srcType, srcField, source, destField, destination, mapping);
+                        } else {
+                            assert destType instanceof Class<?>;
+                            mapSrcToDestField((Class<?>) srcType, srcField, source, (Class<?>) destType, destField, destination, mapping);
+                        }
+                        continue;
                     }
-                    continue;
-                }
 
-                if (destType.getClass() == ClassDef.class) {
-                    ClassDef nestedDef = (ClassDef) destType;
-                    if (List.class.isAssignableFrom(nestedDef.getType()) || Set.class.isAssignableFrom(nestedDef.getType())) {
-                        Mapping nestedMapping = extractNestedDestMapping(mapping, destField);
-                        mapValuesToListItem(source, srcDef, destination, destField, nestedDef.getType(), nestedMapping);
-                    } else {
-                        Mapping nestedMapping = extractNestedDestMapping(mapping, destField);
-                        MapperDest nestedValue = newInstance(nestedDef.getType());
-                        mapAToB(source, srcDef, nestedValue, nestedDef, nestedMapping);
-                        destination.map(destField, nestedDef.getType(), nestedValue);
+                    if (destType.getClass() == ClassDef.class) {
+                        ClassDef nestedDef = (ClassDef) destType;
+                        if (List.class.isAssignableFrom(nestedDef.getType()) || Set.class.isAssignableFrom(nestedDef.getType())) {
+                            Mapping nestedMapping = extractNestedDestMapping(mapping, destField);
+                            mapValuesToListItem(source, srcDef, destination, destField, nestedDef.getType(), nestedMapping);
+                        } else {
+                            Mapping nestedMapping = extractNestedDestMapping(mapping, destField);
+                            MapperDest nestedValue = newInstance(nestedDef.getType());
+                            mapAToB(source, srcDef, nestedValue, nestedDef, nestedMapping);
+                            destination.map(destField, nestedDef.getType(), nestedValue);
+                        }
+                        continue;
                     }
-                    continue;
-                }
 
-                if (srcType == null && srcField.contains(".")) {
-                    String mappedSrcField = mapping.get(destField).fieldName;
-                    if (mappedSrcField.contains(".")) {
-                        String innerSourceField = mappedSrcField.substring(0, mappedSrcField.indexOf("."));
-                        Class<?> innerSourceType = ((ClassDef) srcDef.getFields().get(innerSourceField)).getType();
-                        MapperSrc innerSource = (MapperSrc) source.get(innerSourceField, innerSourceType);
-                        Mapping innerSourceMapping = extractNestedSrcMapping(mapping, innerSourceField);
-                        mapSrcToDestField(innerSource, classDef(innerSourceType), destination, innerSourceMapping, destField, (Class<?>) destDef.getFields().get(destField));
+                    if (srcType == null && srcField.contains(".")) {
+                        String mappedSrcField = mapping.get(destField).fieldName;
+                        if (mappedSrcField.contains(".")) {
+                            String innerSourceField = mappedSrcField.substring(0, mappedSrcField.indexOf("."));
+                            Class<?> innerSourceType = ((ClassDef) srcDef.getFields().get(innerSourceField)).getType();
+                            MapperSrc innerSource = (MapperSrc) source.get(innerSourceField, innerSourceType);
+                            Mapping innerSourceMapping = extractNestedSrcMapping(mapping, innerSourceField);
+                            mapSrcToDestField(innerSource, classDef(innerSourceType), destination, innerSourceMapping, destField, (Class<?>) destDef.getFields().get(destField));
+                        }
+                        continue;
                     }
-                    continue;
-                }
 
-                // last effort if nothing else matches
-                Class<?> toClass = (Class<?>) destType;
-                mapSrcToDestField(source, srcDef, destination, mapping, destField, toClass);
+                    // last effort if nothing else matches
+                    Class<?> toClass = (Class<?>) destType;
+                    mapSrcToDestField(source, srcDef, destination, mapping, destField, toClass);
+                }
             }
+        }
+    }
+
+    public static void copyPropertiesToMap(MapperSrc source, ClassDef srcDef, MapperDest destination) {
+        Mapping mapping = Mapping.init();
+        for (String srcField : srcDef.getFields().keySet()) {
+            Object srcType = srcDef.getFields().get(srcField);
+            mapping.map(srcField, srcField);
+            //identify source field
+            mapSrcToDestField(source, srcDef, destination, mapping, srcField, (Class<?>) srcType);
         }
     }
 
@@ -156,5 +172,9 @@ public class Mappings {
         ClassReader cr = new ClassReader(type.getName());
         cr.accept(def, 0);
         return def;
+    }
+
+    public static ClassDef objectDef(ObjWrapper<?> wrapper) throws IOException {
+        return LRUtils.objectDef(wrapper.getThisTarget());
     }
 }

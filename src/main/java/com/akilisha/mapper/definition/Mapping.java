@@ -1,12 +1,13 @@
 package com.akilisha.mapper.definition;
 
-import com.akilisha.mapper.wrapper.DataWrapper;
+import com.akilisha.mapper.wrapper.ObjWrapper;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 
 import static com.akilisha.mapper.definition.Mappings.classDef;
+import static com.akilisha.mapper.definition.Mappings.objectDef;
 
 public class Mapping extends HashMap<String, Converter<?>> {
 
@@ -29,8 +30,8 @@ public class Mapping extends HashMap<String, Converter<?>> {
         return this;
     }
 
-    public Mapping map(String dest, Class<?> collectionType, String src) {
-        this.put(dest, new Converter<>(src, null, collectionType, null, null));
+    public <R> Mapping map(String dest, String src, Function<Object, R> eval) {
+        this.put(dest, new Converter<>(src, eval));
         return this;
     }
 
@@ -39,18 +40,23 @@ public class Mapping extends HashMap<String, Converter<?>> {
         return this;
     }
 
-    public <R> Mapping map(String dest, String src, Function<Object, R> eval) {
-        this.put(dest, new Converter<>(src, eval));
+    public <R> Mapping map(String dest, String src, Class<?> collectionType, Function<Object, R> eval) {
+        this.put(dest, new Converter<>(src, collectionType, null, eval, null));
+        return this;
+    }
+
+    public Mapping map(String dest, Class<?> collectionType, String src) {
+        this.put(dest, new Converter<>(src, null, collectionType, null, null));
+        return this;
+    }
+
+    public Mapping map(String dest, Class<?> collectionType, Mapping nestedMapping) {
+        this.put(dest, new Converter<>(null, collectionType, null, null, nestedMapping));
         return this;
     }
 
     public <R> Mapping map(String dest, Class<?> collectionType, String src, Function<Object, R> eval) {
         this.put(dest, new Converter<>(src, null, collectionType, eval, null));
-        return this;
-    }
-
-    public <R> Mapping map(String dest, String src, Class<?> collectionType, Function<Object, R> eval) {
-        this.put(dest, new Converter<>(src, collectionType, null, eval, null));
         return this;
     }
 
@@ -65,9 +71,9 @@ public class Mapping extends HashMap<String, Converter<?>> {
         Mappings.mapAToB(from, fromDef, to, toDef, this);
     }
 
-    public void commit(DataWrapper<?> from, DataWrapper<?> to) throws Throwable {
-        ClassDef fromDef = classDef(from.getThisTarget().getClass());
-        ClassDef toDef = classDef(to.getThisTarget().getClass());
+    public void commit(ObjWrapper<?> from, ObjWrapper<?> to) throws Throwable {
+        ClassDef fromDef = objectDef(from);
+        ClassDef toDef = objectDef(to);
         Mappings.mapAToB(from, fromDef, to, toDef, this);
     }
 }

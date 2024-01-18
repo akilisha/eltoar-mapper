@@ -1,6 +1,6 @@
 package com.akilisha.mapper.incubator.asm;
 
-import com.akilisha.mapper.wrapper.DataWrapper;
+import com.akilisha.mapper.wrapper.ObjWrapper;
 import org.objectweb.asm.*;
 
 import java.util.List;
@@ -39,7 +39,7 @@ public class WrapperGen extends ClassVisitor {
         this.targetClassName = String.format("%s__Wrapper", genericClass.getName().replace(".", "/"));
         this.targetClassDescriptor = String.format("L%s;", this.targetClassName);
         this.wrapperLoader = wrapperLoader;
-        this.dataWrapperName = DataWrapper.class.getName().replace(".", "/");
+        this.dataWrapperName = ObjWrapper.class.getName().replace(".", "/");
     }
 
     public static int returnSymbol(String desc) {

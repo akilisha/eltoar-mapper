@@ -69,6 +69,7 @@ public class ClassDef extends ClassVisitor {
     @Override
     public FieldVisitor visitField(int access, String name, String descriptor, String signature, Object value) {
         Class<?> type = detectType(descriptor);
+
         System.out.printf("access: %d, name: %s, descriptor: %s, signature: %s, type: %s\n", access, name, descriptor, signature, type);
         fields.put(name, type);
         if (!isJavaType(type)) {

@@ -1,6 +1,6 @@
 package com.akilisha.mapper.incubator.poet;
 
-import com.akilisha.mapper.wrapper.DataWrapper;
+import com.akilisha.mapper.wrapper.ObjWrapper;
 import com.squareup.javapoet.*;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.MethodVisitor;
@@ -100,7 +100,7 @@ public class WrapperGen extends ClassVisitor {
     public void visitEnd() {
         super.visitEnd();
 
-        ParameterizedTypeName generic = ParameterizedTypeName.get(ClassName.get(DataWrapper.class),
+        ParameterizedTypeName generic = ParameterizedTypeName.get(ClassName.get(ObjWrapper.class),
                 ClassName.get(this.genericClassType));
 
         TypeSpec classBody = TypeSpec.classBuilder(this.wrapperClassName)

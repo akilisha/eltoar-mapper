@@ -10,8 +10,8 @@ repositories {
 }
 
 sourceSets {
-    mapper{
-        java{
+    mapper {
+        java {
             srcDir 'generated/main/java'
         }
     }

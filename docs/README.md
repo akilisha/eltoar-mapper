@@ -1,11 +1,11 @@
-## Lightweight data-transfer tools for the jdk
+## Lightweight object properties mapper
 
 Fast and lightweight mapper for copying properties between data objects. The framework is also non-intrusive because it
 does not require additional implementation of interfaces or extending base classes, and most importantly, it does not
 use the reflection API.
 
-Although there are already many different mapping scenarios that have been addressed, there might still be other 
-scenarios that have not yet been contemplated, and for such, please open an issue in GitHub and describe the usage 
+Although there are already many different mapping scenarios that have been addressed, there might still be other
+scenarios that have not yet been contemplated, and for such, please open an issue in GitHub and describe the usage
 scenario.
 
 ## Mapping Scenarios
@@ -24,20 +24,19 @@ scenario.
 
 - When a different basic type is present, there needs to be a converter supplied
 
-Running ASMifier on Windows
+> Running ASMifier on Windows
 
-> set ASM_JAR=<path to asm jar >\asm-9.6.jar
+```bash
+set ASM_JAR=<path to asm jar>\asm-9.6.jar
+set ASM_UTIL_JAR=<path to asm-util jar>\asm-util-9.6.jar
+set CLASSPATH=.;%ASM_JAR%;%ASM_UTIL_JAR%
 
-> set ASM_UTIL_JAR=<path to asm-util jar>\asm-util-9.6.jar
+java -cp %CLASSPATH% org.objectweb.asm.util.ASMifier java.lang.Runnable
+```
 
-> set CLASSPATH=.;%ASM_JAR%;%ASM_UTIL_JAR%
+Replace ```java.lang.Runnable``` in the example above with any class you wish to check out, for example
 
-> java -cp %CLASSPATH% org.objectweb.asm.util.ASMifier java.lang.Runnable
-
-Replace ```java.lang.Runnable``` above with any class you wish to check out, for example
-
-> java -cp %CLASSPATH%;build\libs\obj-mapper-1.0-SNAPSHOT.jar org.objectweb.asm.util.ASMifier
-> com.akilisha.mapper.incubator.sample.WrappedUser
-
-
-
+```bash
+java -cp %CLASSPATH%;build\libs\obj-mapper-1.0-SNAPSHOT.jar org.objectweb.asm.util.ASMifier ^
+com.akilisha.mapper.incubator.sample.WrappedUser
+```
