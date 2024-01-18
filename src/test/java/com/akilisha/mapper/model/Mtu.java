@@ -1,4 +1,4 @@
-package com.akilisha.mapper.dto.model;
+package com.akilisha.mapper.model;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -9,11 +9,11 @@ import java.math.BigDecimal;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class User {
+public class Mtu {
 
-    Long id;
-    String names;
-    BigDecimal salary;
-    boolean accepted;
-    short code;
+    long id;
+    String majina;
+    BigDecimal mshahara;
+    boolean pamoja;
+    short siri;
 }

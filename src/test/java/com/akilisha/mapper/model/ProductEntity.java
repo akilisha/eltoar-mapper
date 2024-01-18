@@ -1,6 +1,5 @@
-package com.akilisha.mapper.dto.entity;
+package com.akilisha.mapper.model;
 
-import com.akilisha.mapper.definition.MapperSrc;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -10,7 +9,7 @@ import java.util.UUID;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class ProductEntity implements MapperSrc {
+public class ProductEntity {
 
     UUID id;
     String product_name;

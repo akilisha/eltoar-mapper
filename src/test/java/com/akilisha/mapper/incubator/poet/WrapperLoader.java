@@ -1,6 +1,6 @@
 package com.akilisha.mapper.incubator.poet;
 
-import com.akilisha.mapper.dto.model.User;
+import com.akilisha.mapper.model.User;
 import org.objectweb.asm.ClassReader;
 
 import java.io.IOException;

@@ -1,7 +1,5 @@
-package com.akilisha.mapper.dto.entity;
+package com.akilisha.mapper.model;
 
-import com.akilisha.mapper.definition.MapperDest;
-import com.akilisha.mapper.definition.MapperSrc;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -9,7 +7,7 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class Person1 implements MapperDest, MapperSrc {
+public class Person1 {
 
     Long id;
     String firstName;

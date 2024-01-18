@@ -1,6 +1,12 @@
 package com.akilisha.mapper.definition;
 
+import com.akilisha.mapper.model.Actor;
+import com.akilisha.mapper.model.Movie;
+import com.akilisha.mapper.model.Person5;
 import org.junit.jupiter.api.Test;
+import org.objectweb.asm.ClassReader;
+
+import java.io.IOException;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -23,5 +29,27 @@ class ClassDefTest {
         String object3dArrayType = "[[Ljava/lang/Object;";
         Class<?> o3daType = ClassDef.detectType(object3dArrayType);
         assertThat(o3daType.getName()).isEqualTo("[[Ljava.lang.Object;");
+    }
+
+    @Test
+    void verify_can_handle_objects_that_extends_from_another_object() throws IOException {
+        ClassDef def = new ClassDef(Person5.class);
+        ClassReader cr = new ClassReader(Person5.class.getName());
+        cr.accept(def, 0);
+
+        assertThat(def.fields).hasSize(8);
+    }
+
+    @Test
+    void verify_can_handle_objects_having_recursive_references() throws IOException {
+        ClassDef def = ClassDefCache.createAndCacheClassDef(Movie.class);
+
+        assertThat(def.fields).hasSize(5);
+
+        ClassDef def2 = new ClassDef(Actor.class);
+        ClassReader cr2 = new ClassReader(Actor.class.getName());
+        cr2.accept(def2, 0);
+
+        assertThat(def2.fields).hasSize(9);
     }
 }

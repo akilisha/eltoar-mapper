@@ -10,7 +10,7 @@ repositories {
 }
 
 sourceSets {
-    mapper {
+    eltoar {
         java {
             srcDir 'generated/main/java'
         }

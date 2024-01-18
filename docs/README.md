@@ -1,24 +1,19 @@
 ## Lightweight object properties mapper
 
-Fast and lightweight mapper for copying properties between data objects. The framework is also non-intrusive because it
-does not require additional implementation of interfaces or extending base classes, and most importantly, it does not
-use the reflection API.
-
-Although there are already many different mapping scenarios that have been addressed, there might still be other
-scenarios that have not yet been contemplated, and for such, please open an issue in GitHub and describe the usage
-scenario.
+Fast and lightweight mapper for copying properties between data objects. The framework does not require additional
+implementation of interfaces or extending base classes, and most importantly, it does not use the reflection API.
 
 ## Mapping Scenarios
 
-| LHS (Source - MVisitable) | RHS (Destination - Mappable)                                    |
-|---------------------------|-----------------------------------------------------------------|
-| basic type                | basic type with <br/> same name <br/> same basic type           |
-| basic type                | basic type with <br/> same name <br/> different basic type      |
-| basic type                | basic type with <br/> different name <br/> same basic type      |
-| basic type                | basic type with <br/> different name <br/> different basic type |
-| basic type                | property inside object type                                     |
-| collection type           | collection type with same name                                  |
-| collection type           | collection type with different name                             |
+| LHS             | RHS                                                             |
+|-----------------|-----------------------------------------------------------------|
+| basic type      | basic type with <br/> same name <br/> same basic type           |
+| basic type      | basic type with <br/> same name <br/> different basic type      |
+| basic type      | basic type with <br/> different name <br/> same basic type      |
+| basic type      | basic type with <br/> different name <br/> different basic type |
+| basic type      | property inside object type                                     |
+| collection type | collection type with same name                                  |
+| collection type | collection type with different name                             |
 
 ### Important observations
 

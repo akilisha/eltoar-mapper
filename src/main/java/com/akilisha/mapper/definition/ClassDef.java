@@ -2,16 +2,16 @@ package com.akilisha.mapper.definition;
 
 import lombok.Getter;
 import lombok.Setter;
-import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.FieldVisitor;
 
-import java.io.IOException;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Stream;
 
+import static com.akilisha.mapper.definition.ClassDefCache.createAndCacheClassDef;
 import static org.objectweb.asm.Opcodes.ASM9;
 
 
@@ -30,7 +30,7 @@ public class ClassDef extends ClassVisitor {
     public static boolean isJavaType(Class<?> type) {
         return (type.isPrimitive() && type != void.class) ||
                 Collection.class.isAssignableFrom(type) || //case where a class may be extending one of the collection interfaces
-                Stream.of("java.lang", "java.util", "java.math", "java.io", "java.net", "sun.", "com.sun.")
+                Stream.of("java.", "javax.", "sun.", "com.sun.")
                         .anyMatch(t -> type.getName().startsWith(t));
     }
 
@@ -67,20 +67,28 @@ public class ClassDef extends ClassVisitor {
     }
 
     @Override
-    public FieldVisitor visitField(int access, String name, String descriptor, String signature, Object value) {
-        Class<?> type = detectType(descriptor);
-
-        System.out.printf("access: %d, name: %s, descriptor: %s, signature: %s, type: %s\n", access, name, descriptor, signature, type);
-        fields.put(name, type);
-        if (!isJavaType(type)) {
+    public void visit(int version, int access, String name, String signature, String superName, String[] interfaces) {
+        if (superName != null && Set.of("java/", "javax/", "sun/", "com/sun/").stream().noneMatch(superName::startsWith)) {
             try {
-                ClassDef cv = new ClassDef(type);
-                ClassReader cr = new ClassReader(type.getName());
-                cr.accept(cv, 0);
-                fields.put(name, cv);
-            } catch (IOException e) {
+                Class<?> superClass = Class.forName(superName.replace("/", "."));
+                ClassDef def = createAndCacheClassDef(superClass);
+                this.fields.putAll(def.fields);
+            } catch (ClassNotFoundException e) {
                 throw new RuntimeException(e);
             }
+        }
+        super.visit(version, access, name, signature, superName, interfaces);
+    }
+
+    @Override
+    public FieldVisitor visitField(int access, String name, String descriptor, String signature, Object value) {
+        Class<?> fieldType = detectType(descriptor);
+
+        System.out.printf("access: %d, name: %s, descriptor: %s, signature: %s, type: %s\n", access, name, descriptor, signature, fieldType);
+        this.fields.put(name, fieldType);
+        if (!(isJavaType(fieldType) || fieldType.isArray() || fieldType.isEnum() || fieldType.isInterface() || fieldType.isHidden())) {
+            ClassDef def = createAndCacheClassDef(fieldType);
+            this.fields.put(name, def);
         }
 
         return super.visitField(access, name, descriptor, signature, value);

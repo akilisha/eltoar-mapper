@@ -1,6 +1,5 @@
-package com.akilisha.mapper.dto.entity;
+package com.akilisha.mapper.model;
 
-import com.akilisha.mapper.definition.MapperDest;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -8,11 +7,11 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class Person2 implements MapperDest {
+public class PersonEntity {
 
     Long id;
     String firstName;
     String lastName;
-    String phoneNum;
-    Boolean isCellPhone;
+    String phoneNumber;
+    String phoneType;
 }

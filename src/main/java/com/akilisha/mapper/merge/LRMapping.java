@@ -1,7 +1,6 @@
 package com.akilisha.mapper.merge;
 
 import com.akilisha.mapper.definition.ClassDef;
-import com.akilisha.mapper.wrapper.ObjWrapper;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -10,10 +9,6 @@ import java.util.function.Function;
 import static com.akilisha.mapper.merge.LRUtils.objectDef;
 
 public class LRMapping extends HashMap<String, LRConverter<?>> {
-
-    private LRMapping() {
-        //hidden
-    }
 
     public static LRMapping init() {
         return new LRMapping();
@@ -76,11 +71,25 @@ public class LRMapping extends HashMap<String, LRConverter<?>> {
     }
 
     public void merge(Object src, Object dest) throws Throwable {
+        this.merge(src, dest, new LRContext());
+    }
+
+    public void merge(Object src, Object dest, LRContext ctx) throws Throwable {
         LRMerge rlMerge = new LRMerge() {
         };
 
-        ClassDef srcDef = objectDef(src);
-        ClassDef destDef = objectDef(dest);
-        rlMerge.merge(new ObjWrapper<>(src), srcDef, new ObjWrapper<>(dest), destDef, this);
+        int srcHash = System.identityHashCode(src);
+        if (!ctx.containsKey(srcHash)) {
+            ClassDef srcDef = objectDef(src);
+            ClassDef destDef = objectDef(dest);
+            rlMerge.merge(src, srcDef, dest, destDef, this, ctx);
+        } else {
+            String error = ctx.get(srcHash).getFields().stream().filter(f -> f.getParent() == srcHash)
+                    .findFirst().map(f -> String.format("Detected cycle from parent '%s' to child '%s' on the field '%s'",
+                            src.getClass().getSimpleName(), f.getClassName(), f.getFieldName())).orElse(
+                            String.format("Detected cycle - trying to map %s again before the original mapping ic completed",
+                                    src.getClass().getSimpleName()));
+            throw new RuntimeException(error);
+        }
     }
 }

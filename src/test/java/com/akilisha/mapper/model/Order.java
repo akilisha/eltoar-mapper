@@ -1,6 +1,5 @@
-package com.akilisha.mapper.dto.entity;
+package com.akilisha.mapper.model;
 
-import com.akilisha.mapper.definition.MapperDest;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -11,7 +10,7 @@ import java.util.List;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class Order implements MapperDest {
+public class Order {
 
     String orderId;
     List<Product> orderItems;

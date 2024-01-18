@@ -1,6 +1,6 @@
 package com.akilisha.mapper.incubator.asm;
 
-import com.akilisha.mapper.dto.model.Mtu;
+import com.akilisha.mapper.model.Mtu;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.util.TraceClassVisitor;

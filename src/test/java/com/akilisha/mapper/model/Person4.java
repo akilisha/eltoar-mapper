@@ -1,19 +1,20 @@
-package com.akilisha.mapper.dto.entity;
+package com.akilisha.mapper.model;
 
-import com.akilisha.mapper.definition.MapperDest;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class Person4 implements MapperDest {
+public class Person4 {
 
     Long id;
     String first;
     String last;
-    List<Phone1> phones;
+    Set<Phone1> phones;
+    Map<Integer, TourCity> roadTrip;
 }

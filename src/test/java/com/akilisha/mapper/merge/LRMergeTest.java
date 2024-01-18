@@ -1,18 +1,16 @@
 package com.akilisha.mapper.merge;
 
 
-import com.akilisha.mapper.dto.entity.*;
-import com.akilisha.mapper.dto.model.Mtu;
+import com.akilisha.mapper.model.*;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.time.LocalDate;
+import java.util.*;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 class LRMergeTest {
 
@@ -206,8 +204,9 @@ class LRMergeTest {
         assertThat(person.getFirst()).isEqualTo("jim");
         assertThat(person.getLast()).isEqualTo("bob");
         assertThat(person.getPhones()).isNotEmpty();
-        assertThat(person.getPhones().get(0).getNumber()).isEqualTo("616-667-7656");
-        assertThat(person.getPhones().get(0).getIsCell()).isTrue();
+        Phone1[] phones = person.getPhones().toArray(Phone1[]::new);
+        assertThat(phones[0].getNumber()).isEqualTo("616-667-7656");
+        assertThat(phones[0].getIsCell()).isTrue();
     }
 
     @Test
@@ -270,5 +269,112 @@ class LRMergeTest {
         assertThat(order.getOrderItems().get(1).getProductName()).isEqualTo("kasuku");
         assertThat(order.getOrderItems().get(1).getPrice()).isEqualTo(BigDecimal.valueOf(12.70));
         assertThat(order.getOrderItems().get(1).getQuantity()).isEqualTo(BigInteger.valueOf(88));
+    }
+
+    @Test
+    void verify_mapping_item_having_array_field() throws Throwable {
+        Hobby iceFishing = new Hobby("ice fishing", 5, 5.5f);
+        Hobby windSurfing = new Hobby("wind surfing", 8, 4.5f);
+        Person5 src = new Person5(123L, "Frank", "Darabont", Set.of(new Phone1(true, "616-337-3398")), new Hobby[]{iceFishing, windSurfing}, "LA", "CA",
+                Map.of(1, new TourCity("Chicago", "IL"), 2, new TourCity("Madison", "WI"), 3, new TourCity("Minneapolis", "MN")));
+
+        Person5 dest = new Person5();
+        LRMapping.init().merge(src, dest);
+
+        assertThat(dest.getId()).isEqualTo(123L);
+        assertThat(dest.getFirst()).isEqualTo("Frank");
+        assertThat(dest.getHobbies()).isNotEmpty();
+        assertThat(dest.getHobbies()).hasSize(2);
+        assertThat(dest.getHobbies()[0].getActivity()).isEqualTo("ice fishing");
+        assertThat(dest.getHobbies()[1].getActivity()).isEqualTo("wind surfing");
+        assertThat(dest.getPhones()).isNotEmpty();
+        assertThat(dest.getPhones()).hasSize(1);
+        assertThat(dest.getPhones().toArray(Phone1[]::new)[0].getNumber()).isEqualTo("616-337-3398");
+        assertThat(dest.getRoadTrip()).isNotEmpty();
+        assertThat(dest.getRoadTrip()).hasSize(3);
+        assertThat(dest.getRoadTrip().get(1).getCity()).isEqualTo("Chicago");
+        assertThat(dest.getRoadTrip().get(2).getCity()).isEqualTo("Madison");
+        assertThat(dest.getRoadTrip().get(3).getCity()).isEqualTo("Minneapolis");
+    }
+
+    @Test
+    void verify_mapping_very_simple_cyclic_relations() throws Throwable {
+        //parent created with no children
+        Parent parent = new Parent("awesome", null);
+        //children created and assigned parent
+        Child child1 = new Child(1, parent);
+        Child child2 = new Child(2, parent);
+        //parent accepts children
+        parent.setChildren(new Child[]{child1, child2});
+
+        //make a copy of the parent
+        Parent copy = new Parent();
+        assertThatExceptionOfType(RuntimeException.class).isThrownBy(() -> LRMapping.init().merge(parent, copy));
+    }
+
+    @Test
+    void verify_same_mapping_very_simple_but_removing_the_cyclic_relations() throws Throwable {
+        //parent created with no children
+        Parent parent = new Parent("awesome", null);
+        //children created and assigned parent
+        Child child1 = new Child(1, null);
+        Child child2 = new Child(2, null);
+        //parent accepts children
+        parent.setChildren(new Child[]{child1, child2});
+
+        //make a copy of the parent
+        Parent copy = new Parent();
+        LRMapping.init().merge(parent, copy);
+
+        //perform assertions
+        assertThat(copy.getChildren()).isNotEmpty();
+        assertThat(copy.getChildren()).hasSize(2);
+        assertThat(copy.getChildren()[0].getId()).isEqualTo(1);
+        assertThat(copy.getChildren()[1].getId()).isEqualTo(2);
+        assertThat(copy.getName()).isEqualTo("awesome");
+    }
+
+    @Test
+    void verify_mapping_item_having_fields_with_cyclic_relations() throws Throwable {
+        //create entities
+        Hobby iceFishing = new Hobby("ice fishing", 5, 5.5f);
+        Hobby windSurfing = new Hobby("wind surfing", 8, 4.5f);
+        Hobby sailBoating = new Hobby("ocean surfing", 8, 7.5f);
+        Hobby rollerSkating = new Hobby("roller skating", 8, 7.5f);
+        Hobby storyWriting = new Hobby("story writing", 8, 6.6f);
+        Hobby horseRiding = new Hobby("horse riding", 8, 8.4f);
+        Person5 frankD = new Person5(123L, "Frank", "Darabont", Set.of(new Phone1(true, "616-337-3398")), new Hobby[]{}, "LA", "CA",
+                Map.of(1, new TourCity("Chicago", "IL"), 2, new TourCity("Madison", "WI"), 3, new TourCity("Minneapolis", "MN")));
+        Person5 bruceB = new Person5(123L, "Bruce", "Beresford", Set.of(new Phone1(true, "565-543-5467")), new Hobby[]{rollerSkating}, "Athens", "OH",
+                Map.of(1, new TourCity("Dallas", "TX"), 2, new TourCity("Denver", "CO"), 3, new TourCity("Cheyenne", "WY")));
+        Person5 johnS = new Person5(124L, "John", "Singleton", Set.of(new Phone1(true, "459-343-5657")), new Hobby[]{rollerSkating}, "Hossier", "IN",
+                Map.of(1, new TourCity("Athens", "OH"), 2, new TourCity("Georgetown", "KY"), 3, new TourCity("Little Rock", "AK")));
+        Actor timR = new Actor(221L, "Tim", "Robbins", new Phone0("cell", "344-554-5444"), Gender.M, "Fishport", "AL", new HashSet<>(), new Hobby[]{iceFishing});
+        Actor morganF = new Actor(222L, "Morgan", "Freeman", new Phone0("cell", "455-289-2755"), Gender.M, "Gatorville", "MS", new HashSet<>(), new Hobby[]{sailBoating});
+        Actor bobG = new Actor(223L, "Bob", "Gunton", new Phone0("home", "582-594-4567"), Gender.M, "Atlanta", "GA", new HashSet<>(), new Hobby[]{windSurfing});
+        Actor clancyB = new Actor(224L, "Clancy", "Brown", new Phone0("work", "899-523-2231"), Gender.M, "Athens", "OH", new HashSet<>(), new Hobby[]{rollerSkating});
+        Actor jessicaT = new Actor(226L, "Jessica", "Tandy", new Phone0("work", "123-453-9854"), Gender.F, "Miami", "FL", new HashSet<>(), new Hobby[]{storyWriting});
+        Actor pattiL = new Actor(227L, "Patti", "LuPone", new Phone0("work", "467-236-9854"), Gender.F, "Jeezville", "MN", new HashSet<>(), new Hobby[]{sailBoating});
+        Actor estherR = new Actor(228L, "Esther", "Rolle", new Phone0("cell", "592-398-2983"), Gender.F, "horseville", "MT", new HashSet<>(), new Hobby[]{horseRiding});
+        Actor donC = new Actor(229L, "Don", "Cheadle", new Phone0("cell", "983-876-3422"), Gender.M, "cornville", "IA", new HashSet<>(), new Hobby[]{horseRiding});
+        Movie shawShank = new Movie("The Shawshank Redemption", LocalDate.ofYearDay(1998, 1), Set.of(timR, morganF, bobG, clancyB, estherR), 4.9f, new Person5[]{frankD});
+        Movie missDaisy = new Movie("Driving Miss Daisy", LocalDate.ofYearDay(1999, 1), Set.of(morganF, jessicaT, pattiL, estherR), 7.9f, new Person5[]{bruceB});
+        Movie rosewood = new Movie("Rosewood", LocalDate.ofYearDay(1999, 1), Set.of(estherR, donC), 7.9f, new Person5[]{johnS});
+
+        //add cyclic relation
+        morganF.getOtherMovies().add(missDaisy);
+        estherR.getOtherMovies().add(rosewood);
+//        donC.getOtherMovies().add(shawShank); // not true, but ok, so what? It's just testing :-)
+
+        // create mapping
+        Actor donCopy = new Actor();
+//        assertThatExceptionOfType(RuntimeException.class).isThrownBy(() -> LRMapping.init().merge(donC, donCopy));
+        LRMapping.init().merge(donC, donCopy);
+
+        //perform assertions
+        assertThat(donCopy.getHobbies()).isNotEmpty();
+        assertThat(donCopy.getHobbies()[0].getActivity()).isEqualTo("horse riding");
+        assertThat(donCopy.getGender()).isEqualTo(Gender.M);
+        assertThat(donCopy.getOtherMovies()).isNull();
     }
 }
