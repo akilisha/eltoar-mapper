@@ -1,4 +1,4 @@
-package com.akilisha.mapper.model;
+package com.akilisha.mapper.model.cycle;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -9,8 +9,8 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class Parent {
+public class Child {
 
-    String name;
-    Child[] children;
+    int id;
+    Parent parent;
 }

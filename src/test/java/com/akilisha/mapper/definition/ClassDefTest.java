@@ -1,13 +1,14 @@
 package com.akilisha.mapper.definition;
 
-import com.akilisha.mapper.model.Actor;
-import com.akilisha.mapper.model.Movie;
 import com.akilisha.mapper.model.Person5;
+import com.akilisha.mapper.model.movies.Actor;
+import com.akilisha.mapper.model.movies.Movie;
 import org.junit.jupiter.api.Test;
 import org.objectweb.asm.ClassReader;
 
 import java.io.IOException;
 
+import static com.akilisha.mapper.definition.ClassDef.newClassDef;
 import static org.assertj.core.api.Assertions.assertThat;
 
 class ClassDefTest {
@@ -42,7 +43,7 @@ class ClassDefTest {
 
     @Test
     void verify_can_handle_objects_having_recursive_references() throws IOException {
-        ClassDef def = ClassDefCache.createAndCacheClassDef(Movie.class);
+        ClassDef def = newClassDef(Movie.class);
 
         assertThat(def.fields).hasSize(5);
 
@@ -50,6 +51,6 @@ class ClassDefTest {
         ClassReader cr2 = new ClassReader(Actor.class.getName());
         cr2.accept(def2, 0);
 
-        assertThat(def2.fields).hasSize(9);
+        assertThat(def2.fields).hasSize(10);
     }
 }

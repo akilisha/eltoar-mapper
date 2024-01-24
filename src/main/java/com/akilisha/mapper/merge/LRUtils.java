@@ -1,19 +1,14 @@
 package com.akilisha.mapper.merge;
 
-import com.akilisha.mapper.definition.ClassDef;
-import com.akilisha.mapper.definition.ClassDefCache;
-
-import java.lang.invoke.MethodHandle;
-import java.lang.invoke.MethodHandles;
-import java.lang.invoke.MethodType;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class LRUtils {
 
     public static final Map<Class<?>, Class<?>> WRAPPER_TYPE_MAP;
-    public static MethodHandles.Lookup publicLookup = MethodHandles.publicLookup();
 
     static {
         WRAPPER_TYPE_MAP = new HashMap<>(16);
@@ -40,28 +35,25 @@ public class LRUtils {
         return type.isArray();
     }
 
-    public static ClassDef objectDef(Object target) {
-        Class<?> targetType = target.getClass();
-        if (isMapType(targetType)) {
-            ClassDef def = ClassDefCache.createAndCacheClassDef(targetType);
-            Map<?, ?> map = (Map<?, ?>) target;
-            for (Map.Entry<?, ?> entry : map.entrySet()) {
-                Object value = entry.getValue();
-                Class<?> valueType = value.getClass();
-                def.getFields().put((String) entry.getKey(), valueType);
+    public static Map<String, Object> unfoldProperties(Map<String, Object> src) {
+        for (Iterator<Map.Entry<String, Object>> iter = src.entrySet().iterator(); iter.hasNext(); ) {
+            Map.Entry<String, Object> e = iter.next();
+            String key = e.getKey();
+            if (key.contains(".")) {
+                String pre = key.substring(0, key.indexOf("."));
+                String post = key.substring(pre.length() + 1);
+                if (!src.containsKey(pre)) {
+                    Map<String, Object> dest = new ConcurrentHashMap<>();
+                    dest.put(post, src.get(key));
+                    src.put(pre, unfoldProperties(dest));
+                } else {
+                    Map<String, Object> dest = (Map) src.get(pre);
+                    dest.put(post, src.get(key));
+                    src.put(pre, unfoldProperties(dest));
+                }
+                iter.remove();
             }
-            return def;
-        } else if (isArrayType(targetType) || isCollectionType(targetType)) {
-            throw new RuntimeException("Cannot inspect a list of array for fields. Try to inspect the collection or " +
-                    "array elements individually instead");
-        } else {
-            return ClassDefCache.createAndCacheClassDef(targetType);
         }
-    }
-
-    public static Object newInstance(Class<?> type) throws Throwable {
-        MethodType mt = MethodType.methodType(void.class);
-        MethodHandle newType = publicLookup.findConstructor(type, mt);
-        return newType.invoke();
+        return src;
     }
 }

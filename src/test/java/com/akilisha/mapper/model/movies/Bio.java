@@ -1,6 +1,5 @@
-package com.akilisha.mapper.model;
+package com.akilisha.mapper.model.movies;
 
-import com.akilisha.mapper.model.movies.Tour;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -11,11 +10,11 @@ import java.util.Set;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class Person4 {
+public class Bio {
 
     Long id;
     String first;
     String last;
-    Set<Phone1> phones;
+    Set<Phone> phones;
     Map<Integer, Tour> roadTrip;
 }

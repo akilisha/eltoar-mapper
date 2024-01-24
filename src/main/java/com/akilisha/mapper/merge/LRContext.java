@@ -16,13 +16,25 @@ public class LRContext extends HashMap<Integer, LRContext.LREdge> {
     }
 
     public void addEdge(int parent, String child, String field) {
-        addHash(parent);
-        get(parent).fields.add(new LRNode(parent, child, field));
+        if (field != null) {
+            addHash(parent);
+            get(parent).fields.add(new LRNode(parent, child, field));
+        }
     }
 
-    public LRContext trace(Object parent, Object child, String field) {
-        addEdge(System.identityHashCode(parent), child.getClass().getSimpleName(), field);
-        return this;
+    public void trace(Object parent, Object child, String field) {
+        int parentHash = System.identityHashCode(parent);
+        if (containsKey(parentHash)) {
+            String error = get(parentHash).getFields().stream().filter(f -> f.getParent() == parentHash)
+                    .findFirst().map(f -> String.format("Detected cycle from parent '%s' to child '%s' on the field '%s'",
+                            parent.getClass().getSimpleName(), f.getChild(), f.getField())).orElse(
+                            String.format("Detected cycle - trying to map %s again before the original mapping ic completed",
+                                    parent
+                                            .getClass().getSimpleName()));
+            throw new RuntimeException(error);
+        }
+        //ok, looking good
+        addEdge(parentHash, child.getClass().getName(), field);
     }
 
     @Getter
@@ -42,7 +54,7 @@ public class LRContext extends HashMap<Integer, LRContext.LREdge> {
     public static class LRNode {
 
         int parent;
-        String className;
-        String fieldName;
+        String child;
+        String field;
     }
 }

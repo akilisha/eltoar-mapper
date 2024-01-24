@@ -1,4 +1,4 @@
-package com.akilisha.mapper.model;
+package com.akilisha.mapper.model.ecomm;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

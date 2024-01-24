@@ -2,16 +2,18 @@ package com.akilisha.mapper.definition;
 
 import lombok.Getter;
 import lombok.Setter;
+import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.FieldVisitor;
 
+import java.io.IOException;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import static com.akilisha.mapper.definition.ClassDefCache.createAndCacheClassDef;
+import static com.akilisha.mapper.merge.LRUtils.*;
 import static org.objectweb.asm.Opcodes.ASM9;
 
 
@@ -20,7 +22,7 @@ import static org.objectweb.asm.Opcodes.ASM9;
 public class ClassDef extends ClassVisitor {
 
     final Class<?> type;
-    final Map<String, Object> fields = new HashMap<>();
+    final Map<String, FieldDef> fields = new HashMap<>();
 
     public ClassDef(Class<?> type) {
         super(ASM9);
@@ -29,7 +31,8 @@ public class ClassDef extends ClassVisitor {
 
     public static boolean isJavaType(Class<?> type) {
         return (type.isPrimitive() && type != void.class) ||
-                Collection.class.isAssignableFrom(type) || //case where a class may be extending one of the collection interfaces
+                Collection.class.isAssignableFrom(type) || // case where a type is a subclass of the collection interface
+                Map.class.isAssignableFrom(type) || // case where a type is a subclass of the map interface
                 Stream.of("java.", "javax.", "sun.", "com.sun.")
                         .anyMatch(t -> type.getName().startsWith(t));
     }
@@ -66,12 +69,49 @@ public class ClassDef extends ClassVisitor {
         };
     }
 
+    public static ClassDef newClassDef(Class<?> target) {
+        try {
+            ClassDef cv1 = new ClassDef(target);
+            ClassReader cr = new ClassReader(target.getName());
+            cr.accept(cv1, 0);
+            return cv1;
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static ClassDef objectDef(Object target) {
+        Class<?> targetType = target.getClass();
+        if (isMapType(targetType)) {
+            ClassDef def = new ClassDef(targetType);
+            Map<?, ?> map = (Map<?, ?>) target;
+            for (Map.Entry<?, ?> entry : map.entrySet()) {
+                String key = (String) entry.getKey();
+                Object value = entry.getValue();
+                Class<?> fieldType = value.getClass();
+                if (Map.class.isAssignableFrom(fieldType)) {
+                    FieldDef field = FieldDef.define(key, ClassDef.class, objectDef(value));
+                    def.getFields().put(key, field);
+                } else {
+                    FieldDef field = FieldDef.define(key, fieldType, value);
+                    def.getFields().put(key, field);
+                }
+            }
+            return def;
+        } else if (isArrayType(targetType) || isCollectionType(targetType)) {
+            throw new RuntimeException("Cannot inspect a list of array for fields. Try to inspect the collection or " +
+                    "array elements individually instead");
+        } else {
+            return newClassDef(targetType);
+        }
+    }
+
     @Override
     public void visit(int version, int access, String name, String signature, String superName, String[] interfaces) {
         if (superName != null && Set.of("java/", "javax/", "sun/", "com/sun/").stream().noneMatch(superName::startsWith)) {
             try {
                 Class<?> superClass = Class.forName(superName.replace("/", "."));
-                ClassDef def = createAndCacheClassDef(superClass);
+                ClassDef def = newClassDef(superClass);
                 this.fields.putAll(def.fields);
             } catch (ClassNotFoundException e) {
                 throw new RuntimeException(e);
@@ -85,10 +125,10 @@ public class ClassDef extends ClassVisitor {
         Class<?> fieldType = detectType(descriptor);
 
         System.out.printf("access: %d, name: %s, descriptor: %s, signature: %s, type: %s\n", access, name, descriptor, signature, fieldType);
-        this.fields.put(name, fieldType);
+        this.fields.put(name, FieldDef.define(name, fieldType));
         if (!(isJavaType(fieldType) || fieldType.isArray() || fieldType.isEnum() || fieldType.isInterface() || fieldType.isHidden())) {
-            ClassDef def = createAndCacheClassDef(fieldType);
-            this.fields.put(name, def);
+            ClassDef def = newClassDef(fieldType);
+            this.fields.put(name, FieldDef.define(name, ClassDef.class, def));
         }
 
         return super.visitField(access, name, descriptor, signature, value);

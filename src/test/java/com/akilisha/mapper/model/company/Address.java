@@ -1,4 +1,4 @@
-package com.akilisha.mapper.model;
+package com.akilisha.mapper.model.company;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -9,9 +9,10 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class Hobby {
+public class Address {
 
-    String activity;
-    int difficulty;
-    float popularity;
+    private String street;
+    private String city;
+    private String state;
+    private int zipcode;
 }

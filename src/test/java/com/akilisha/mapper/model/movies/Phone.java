@@ -1,4 +1,4 @@
-package com.akilisha.mapper.model;
+package com.akilisha.mapper.model.movies;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -7,8 +7,8 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class TourCity {
+public class Phone {
 
-    String city;
-    String state;
+    String type;
+    String number;
 }

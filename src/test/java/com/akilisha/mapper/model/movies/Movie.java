@@ -1,5 +1,6 @@
-package com.akilisha.mapper.model;
+package com.akilisha.mapper.model.movies;
 
+import com.akilisha.mapper.model.Person5;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;

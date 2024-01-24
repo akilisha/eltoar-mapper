@@ -1,4 +1,4 @@
-package com.akilisha.mapper.model;
+package com.akilisha.mapper.model.movies;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -9,8 +9,9 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class Child {
+public class Hobby {
 
-    int id;
-    Parent parent;
+    String activity;
+    int difficulty;
+    float popularity;
 }
