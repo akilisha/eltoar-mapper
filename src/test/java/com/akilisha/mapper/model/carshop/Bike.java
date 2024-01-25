@@ -7,5 +7,6 @@ public class Bike extends Motorized {
     }
 
     public Bike() {
+        super();
     }
 }

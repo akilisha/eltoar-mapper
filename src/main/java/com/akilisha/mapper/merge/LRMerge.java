@@ -9,6 +9,7 @@ import java.lang.invoke.MethodType;
 import java.lang.reflect.Array;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Supplier;
 
 import static com.akilisha.mapper.definition.ClassDef.*;
 import static com.akilisha.mapper.merge.LRUtils.isMapType;
@@ -47,7 +48,7 @@ public interface LRMerge {
     }
 
     static LRMapping getNestedOrDefault(String key, LRMapping nestedMapping) {
-        return nestedMapping.get(key).nestedMapping != null ? nestedMapping.get(key).nestedMapping : LRMapping.init();
+        return Optional.ofNullable(nestedMapping.get(key)).filter(o -> o.nestedMapping != null).map(o -> nestedMapping.get(key).nestedMapping).orElse(LRMapping.init());
     }
 
     static String getOrDefault(String strValue, String defaultValue) {
@@ -148,6 +149,41 @@ public interface LRMerge {
         }
     }
 
+    static Object extractMapKey(Object srcElement, Map<String, FieldDef> srcFieldsMap, String srcFieldName, LRMapping mapping) throws Throwable {
+        Object keyValue;
+        String keyField = Optional.ofNullable(mapping.get(srcFieldName)).map(LRPathway::getKeyField).orElse(null);
+        if (keyField != null) {
+            keyValue = getFieldValue(srcElement, keyField, srcFieldsMap.get(keyField).getType());
+        } else {
+            Supplier<?> keySupplier = mapping.get(srcFieldName).keySupplier;
+            if (keySupplier != null) {
+                keyValue = keySupplier.get();
+            } else {
+                throw new RuntimeException("Mapping collection to a Map type, but their is not key field or key supplier function provided");
+            }
+        }
+        return keyValue;
+    }
+
+    private static Class<?> bestEffortInferDestElementType(LRPathway<?> converter, FieldDef destFieldDef) {
+        Class<?> destElementType = converter.destCollectionType;
+        //last minute effort to infer the destination element type
+        if (destElementType == null) {
+            System.out.printf("The destination object type is not configured. Last minute match will try to use '%s' type\n", destFieldDef.getType());
+            destElementType = destFieldDef.getType();
+        }
+        return destElementType;
+    }
+
+    static Class<?> getMappedElementType(String srcFieldName, LRMapping mapping, Object collectionElement) {
+        Class<?> destElementType = Optional.ofNullable(mapping.get(srcFieldName)).map(o -> o.destCollectionType).orElse(null);
+        if (destElementType == null) {
+            System.out.printf("The 'destination element type' is not available. Last minute match will try to use '%s' type\n", collectionElement.getClass());
+            destElementType = collectionElement.getClass();
+        }
+        return destElementType;
+    }
+
     default Map<String, FieldDef> fieldValues(Object src) throws Throwable {
         if (Map.class.isAssignableFrom(src.getClass())) {
             return fieldValues(src, objectDef(src));
@@ -194,8 +230,8 @@ public interface LRMerge {
                 // Start with the low-hanging fruits - where there is no explicit mapping
                 // All valid mapping is done relative to the source field, and therefore if an entry is missing, then
                 // there is definitely no valid mapping exists
-                LRConverter<?> converter = mapping.get(srcField);
-                if (converter == null) {
+                LRPathway<?> pathway = mapping.get(srcField);
+                if (pathway == null) {
                     //using implicit mapping at this point
                     if (destDef.containsKey(srcField)) {
                         FieldDef destFieldDef = destDef.get(srcField);
@@ -259,7 +295,7 @@ public interface LRMerge {
                                 continue;
                             }
 
-                            throw new RuntimeException("This is definitely an unhandled scenario. Please report the usage that " +
+                            throw new RuntimeException("This scenario is definitely not anticipated. Please report the usage that " +
                                     "produced this error to the developers for further review.");
                         } else {
                             throw new RuntimeException("It is very unlikely to end up in this scenario unless the mapping " +
@@ -277,7 +313,7 @@ public interface LRMerge {
                 }
 
                 //you are now inevitably dealing with explicit mapping
-                String destFieldName = getOrDefault(converter.fieldName, srcField);
+                String destFieldName = getOrDefault(pathway.fieldName, srcField);
 
                 //Scenario where destination (LHS) fieldName contains a '.' character
                 if (destFieldName.contains(".")) {
@@ -305,13 +341,13 @@ public interface LRMerge {
 
                     // when RHS contains a single-element collection
                     if (Collection.class.isAssignableFrom(destFieldDef.getType())) {
-                        Class<?> collectionElementType = converter.destCollectionType;
+                        Class<?> collectionElementType = pathway.destCollectionType;
                         explicitCopyLhsParentToRhsSingleElementCollection(src, srcFieldDef, dest, destFieldDef, parent, collectionElementType, nestedMapping, context);
                         continue;
                     }
 
                     if (Map.class.isAssignableFrom(destFieldDef.getType())) {
-                        throw new RuntimeException("This is definitely an unhandled scenario. Please report the usage that " +
+                        throw new RuntimeException("This scenario is definitely not anticipated. Please report the usage that " +
                                 "produced this error to the developers for further review.");
                     }
                 }
@@ -321,7 +357,7 @@ public interface LRMerge {
 
                 if (destFieldDef != null) {
 
-                    // now considering more complex field types
+                    // destination (rhs) is an embedded object
                     if (ClassDef.class.isAssignableFrom(destFieldDef.getType())) {
                         ClassDef nestedDef = (ClassDef) srcValue;
                         Class<?> srcNestedClassType = nestedDef.getType();
@@ -338,85 +374,90 @@ public interface LRMerge {
                             merge(nestedSrcValue, fieldValues(nestedSrcValue), nestedDestValue, fieldValues(nestedDestValue),
                                     mapping.get(srcField).nestedMapping, context);
                             setFieldValue(dest, destFieldName, destNestedClassType, nestedDestValue);
+
+                            continue;
                         }
 
-                        continue;
+                        throw new RuntimeException("This scenario is definitely not anticipated. Please report the usage that " +
+                                "produced this error to the developers for further review.");
                     }
 
                     // destination (rhs) is a collection
                     if (Collection.class.isAssignableFrom(destFieldDef.getType())) {
-                        Class<?> destElementType = converter.destCollectionType;
+                        Class<?> destElementType = bestEffortInferDestElementType(pathway, destFieldDef);
 
                         // source (lhs) is an array
                         if (srcFieldDef.getType().isArray()) {
-                            throw new RuntimeException("This is definitely an unhandled scenario. Please report the usage that " +
-                                    "produced this error to the developers for further review.");
+                            explicitCopyLhsArrayToRhsCollection(srcFieldDef, srcField, dest, destFieldDef, destFieldName, destElementType, context, mapping);
+                            continue;
                         }
 
                         // source (lhs) is a collection
                         if (Collection.class.isAssignableFrom(srcFieldDef.getType())) {
-                            explicitCopyLhsCollectionElementsToRhsCollection(srcFieldDef, srcField, dest, destFieldDef, destFieldName, destElementType, mapping, context);
+                            explicitCopyLhsCollectionToRhsCollection(srcFieldDef, srcField, dest, destFieldDef, destFieldName, mapping, context);
+                            continue;
                         }
 
                         // source (lhs) is a map
                         if (Map.class.isAssignableFrom(srcFieldDef.getType())) {
-                            explicitCopyLhsMapValuesElementsToRhsCollection(srcFieldDef, dest, destFieldDef, destFieldName, destElementType, context, mapping);
-                        }
-                        continue;
-                    }
-
-                    // both lhs and rhs are arrays
-                    if (destFieldDef.getType().isArray() && srcFieldDef.getType().isArray()) {
-                        throw new RuntimeException("This is definitely an unhandled scenario. Please report the usage that " +
-                                "produced this error to the developers for further review.");
-                    }
-
-                    if (destFieldDef.getType().isArray() && Collection.class.isAssignableFrom(srcFieldDef.getType())) {
-                        explicitCopyLhsCollectionElementsToRhsArray(src, srcFieldDef, srcField, dest, destFieldDef, destFieldName, mapping, context);
-                        continue;
-                    }
-
-                    if (Collection.class.isAssignableFrom(destFieldDef.getType()) && srcFieldDef.getType().isArray()) {
-                        throw new RuntimeException("This is definitely an unhandled scenario. Please report the usage that " +
-                                "produced this error to the developers for further review.");
-                    }
-
-                    // both lhs and rhs are collections
-                    if (Collection.class.isAssignableFrom(destFieldDef.getType()) && Collection.class.isAssignableFrom(srcFieldDef.getType())) {
-                        throw new RuntimeException("This is definitely an unhandled scenario. Please report the usage that " +
-                                "produced this error to the developers for further review.");
-                    }
-
-                    // lhs is a map
-                    if (Map.class.isAssignableFrom(srcFieldDef.getType())) {
-                        Class<?> srcDictionaryType = srcFieldDef.getType();
-                        Map<?, ?> srcDictionary = (Map<?, ?>) getEmbeddedValue(src, srcField, srcDictionaryType);
-                        if (srcDictionary == null) {
-                            srcDictionary = (Map<?, ?>) createDictionaryField(srcDictionaryType);
-                        }
-
-                        // start mapping to the rhs
-                        Class<?> destFieldType = destFieldDef.getType();
-                        // 1. if rhs is an array
-                        if (destFieldType.isArray()) {
-                            explicitCopyLhsMapValuesToRhsArray(srcDictionary, dest, destFieldName, destFieldType, context, mapping);
+                            explicitCopyLhsMapValuesToRhsCollection(srcFieldDef, srcField, dest, destFieldDef, destFieldName, context, mapping);
                             continue;
                         }
 
-                        // 2. if rhs is a map
-                        if (Map.class.isAssignableFrom(destFieldType)) {
-                            explicitCopyLhsMapEntriesToRhsMapEntries(srcDictionary, dest, destFieldName, destFieldType, context, mapping);
-                            continue;
-                        }
-
-                        throw new RuntimeException("This is definitely an unhandled scenario. Please report the usage that " +
+                        throw new RuntimeException("This scenario is definitely not anticipated. Please report the usage that " +
                                 "produced this error to the developers for further review.");
                     }
 
-                    // rhs is a map
+                    // destination (rhs) is an array
+                    if (destFieldDef.getType().isArray()) {
+                        Class<?> destElementType = bestEffortInferDestElementType(pathway, destFieldDef);
+
+                        // source (lhs) is an array
+                        if (srcFieldDef.getType().isArray()) {
+                            explicitCopyLhsArrayToRhsArray(srcFieldDef, srcField, dest, destFieldDef, destFieldName, mapping, context);
+                            continue;
+                        }
+
+                        // source (lhs) is a collection
+                        if (Collection.class.isAssignableFrom(srcFieldDef.getType())) {
+                            explicitCopyLhsCollectionToRhsArray(srcFieldDef, srcField, dest, destFieldDef, destFieldName, mapping, context);
+                            continue;
+                        }
+
+                        // source (lhs) is a map
+                        if (Map.class.isAssignableFrom(srcFieldDef.getType())) {
+                            explicitCopyLhsMapValuesToRhsArray(srcFieldDef, dest, destFieldName, destFieldDef.getType(), mapping, context);
+                            continue;
+                        }
+
+                        throw new RuntimeException("This scenario is definitely not anticipated. Please report the usage that " +
+                                "produced this error to the developers for further review.");
+                    }
+
+                    // destination (rhs) is a map
                     if (Map.class.isAssignableFrom(destFieldDef.getType())) {
-                        explicitCopyLhsCollectionElementsToRhsMap(src, srcFieldDef, srcField, dest, destFieldName, destFieldDef, mapping, context);
-                        continue;
+                        Class<?> srcFieldType = srcFieldDef.getType();
+
+                        // source (lhs) is an array
+                        if (srcFieldType.isArray()) {
+                            explicitCopyLhsArrayToRhsMap(srcFieldDef, srcField, dest, destFieldDef, destFieldName, mapping, context);
+                            continue;
+                        }
+
+                        // source (lhs) is a collection
+                        if (Collection.class.isAssignableFrom(srcFieldType)) {
+                            explicitCopyLhsCollectionToRhsMap(srcFieldDef, srcField, dest, destFieldDef, destFieldName, mapping, context);
+                            continue;
+                        }
+
+                        // source (lhs) is a map
+                        if (Map.class.isAssignableFrom(srcFieldType)) {
+                            explicitCopyLhsMapEntriesToRhsMapEntries(srcFieldDef, dest, destFieldName, srcFieldType, context, mapping);
+                            continue;
+                        }
+
+                        throw new RuntimeException("This scenario is definitely not anticipated. Please report the usage that " +
+                                "produced this error to the developers for further review.");
                     }
 
                     // enums deserve their own special treatment
@@ -427,8 +468,8 @@ public interface LRMerge {
 
                     // this needs to come at the end of this section
                     if (isJavaType(destFieldDef.getType())) {
-                        Object destValue = converter.getEval() != null
-                                ? converter.getEval().apply(srcValue)
+                        Object destValue = pathway.getConverter() != null
+                                ? pathway.getConverter().apply(srcValue)
                                 : srcValue;
                         setFieldValue(dest, destFieldDef.getName(), destFieldDef.getType(), destValue);
                         continue;
@@ -449,11 +490,39 @@ public interface LRMerge {
                         explicitFlattenLhsSingleElementArrayIntoRhsDestination(src, srcFieldDef, srcField, dest, destDef, destFieldName, mapping, context);
                         continue;
                     }
+
+                    throw new RuntimeException(String.format("At this point, you have most likely mapped a " +
+                            "field '%s' in source '%s' to an non-existent field '%s' in destination '%s'.", srcField, src.getClass().getName(), destFieldName, dest.getClass().getName()));
                 }
                 continue;
             }
 
             System.out.printf("Skipping field '%s' in class '%s' since it is a null value\n", srcField, src.getClass().getName());
+        }
+    }
+
+    default void explicitCopyLhsArrayToRhsCollection(FieldDef srcFieldDef, String srcFieldName, Object dest, FieldDef destFieldDef, String destFieldName, Class<?> destElementType, LRContext context, LRMapping mapping) throws Throwable {
+        Object sourceArray = srcFieldDef.getValue();
+
+        if (sourceArray != null) {
+            Class<?> destCollectionType = destFieldDef.getType();
+            Object destCollection = createCollectionField(destCollectionType);
+
+            int size = Array.getLength(sourceArray);
+            for (int i = 0; i < size; i++) {
+                Object sourceElement = Array.get(sourceArray, i);
+                // last minute effort to infer a suitable class type for 'destination element'
+                if (destElementType == null || destElementType.isInterface()) {
+                    System.out.printf("The 'destination element type' is not available. Last minute match will try to use '%s' type\n", sourceElement.getClass());
+                    destElementType = sourceElement.getClass();
+                }
+
+                //proceed with merging
+                Object destElement = destElementType.getConstructor().newInstance();
+                merge(sourceElement, fieldValues(sourceElement), destElement, fieldValues(destElement), LRMerge.getNestedOrDefault(srcFieldName, mapping), context);
+                ((Collection<Object>) destCollection).add(destElement);
+            }
+            setFieldValue(dest, destFieldName, destFieldDef.getType(), destCollection);
         }
     }
 
@@ -504,38 +573,60 @@ public interface LRMerge {
         }
     }
 
-    default void explicitCopyLhsMapValuesToRhsArray(Map<?, ?> srcDictionary, Object dest, String destFieldName, Class<?> destFieldType, LRContext context, LRMapping mapping) throws Throwable {
-        Class<?> arrayElementType = destFieldType.componentType();
-        Object destArray = getEmbeddedValue(dest, destFieldName, destFieldType);
-        if (destArray == null) {
-            destArray = Array.newInstance(arrayElementType, srcDictionary.size());
-            setFieldValue(dest, destFieldName, destFieldType, destArray);
-        }
-
-        int i = 0;
-        for (Map.Entry<?, ?> srcEntry : srcDictionary.entrySet()) {
-            Object key = srcEntry.getKey();
-            if (!isValidMapKey(key)) {
-                throw new RuntimeException("Invalid map key type. Expecting only String or Boxed Primitive types");
+    default void explicitCopyLhsMapValuesToRhsArray(FieldDef srcFieldDef, Object dest, String destFieldName, Class<?> destFieldType, LRMapping mapping, LRContext context) throws Throwable {
+        Map<?, ?> srcDictionary = (Map<?, ?>) srcFieldDef.getValue();
+        if (srcDictionary != null) {
+            Class<?> arrayElementType = destFieldType.componentType();
+            Object destArray = getEmbeddedValue(dest, destFieldName, destFieldType);
+            if (destArray == null) {
+                destArray = Array.newInstance(arrayElementType, srcDictionary.size());
+                setFieldValue(dest, destFieldName, destFieldType, destArray);
             }
 
-            Object sourceElement = srcEntry.getValue();
-            Object destElement = arrayElementType.getConstructor().newInstance();
-            merge(sourceElement, fieldValues(sourceElement), destElement, fieldValues(destElement), LRMerge.getNestedOrDefault(destFieldName, mapping), context);
+            int i = 0;
+            for (Object sourceElement : srcDictionary.values()) {
+                Class<?> destElementType = arrayElementType.isInterface() ? sourceElement.getClass() : arrayElementType;
+                Object destElement = destElementType.getConstructor().newInstance();
+                merge(sourceElement, fieldValues(sourceElement), destElement, fieldValues(destElement), LRMerge.getNestedOrDefault(destFieldName, mapping), context);
 
-            // add to dest array
-            Array.set(destArray, i++, destElement);
+                // add created element to the destination array
+                Array.set(destArray, i++, destElement);
+            }
         }
     }
 
-    default void explicitCopyLhsMapEntriesToRhsMapEntries(Map<?, ?> srcDictionary, Object dest, String destFieldName, Class<?> destFieldType, LRContext context, LRMapping mapping) throws Throwable {
+    default void explicitCopyLhsMapValuesToRhsCollection(FieldDef srcFieldDef, String srcFieldName, Object dest, FieldDef destFieldDef, String destFieldName, LRContext context, LRMapping mapping) throws Throwable {
+        Map<?, ?> srcDictionary = (Map<?, ?>) srcFieldDef.getValue();
+        if (srcDictionary != null) {
+
+            Class<?> destCollectionType = destFieldDef.getType();
+            Object destCollection = destFieldDef.getValue();
+            if (destCollection == null) {
+                destCollection = createCollectionField(destCollectionType);
+                setFieldValue(dest, destFieldName, destCollectionType, destCollection);
+            }
+
+            for (Object collectionElement : srcDictionary.values()) {
+                Class<?> destElementType = getMappedElementType(srcFieldName, mapping, collectionElement);
+
+                Object destElement = destElementType.getConstructor().newInstance();
+                merge(collectionElement, fieldValues(collectionElement), destElement, fieldValues(destElement), LRMerge.getNestedOrDefault(destFieldName, mapping), context);
+
+                // add created element to the destination collection
+                ((Collection) destCollection).add(destElement);
+            }
+        }
+    }
+
+    default void explicitCopyLhsMapEntriesToRhsMapEntries(FieldDef srcFieldDef, Object dest, String destFieldName, Class<?> destFieldType, LRContext context, LRMapping mapping) throws Throwable {
         Map<Object, Object> destDictionary = (Map) getEmbeddedValue(dest, destFieldName, destFieldType);
         if (destDictionary == null) {
             destDictionary = (Map) createDictionaryField(destFieldType);
             setFieldValue(dest, destFieldName, destFieldType, destDictionary);
         }
 
-        Class<?> destElementType = mapping.get(destFieldName).destCollectionType;
+        Map<?, ?> srcDictionary = (Map<?, ?>) srcFieldDef.getValue();
+        Class<?> destElementType = Optional.ofNullable(mapping.get(destFieldName)).map(o -> o.destCollectionType).orElse(null);
         for (Map.Entry<?, ?> srcEntry : srcDictionary.entrySet()) {
             Object key = srcEntry.getKey();
             if (!isValidMapKey(key)) {
@@ -543,69 +634,119 @@ public interface LRMerge {
             }
 
             Object sourceElement = srcEntry.getValue();
-            Object destElement = destElementType.getConstructor().newInstance();
+            Class<?> destValueType = (destElementType == null || destElementType.isInterface()) ? sourceElement.getClass() : destElementType;
+            Object destElement = destValueType.getConstructor().newInstance();
             merge(sourceElement, fieldValues(sourceElement), destElement, fieldValues(destElement), LRMerge.getNestedOrDefault(destFieldName, mapping), context);
 
-            // add to dest map
+            // add created element to the destination map
             destDictionary.put(key, destElement);
         }
     }
 
-    default void explicitCopyLhsMapValuesElementsToRhsCollection(FieldDef srcFieldDef, Object dest, FieldDef destFieldDef, String destFieldName, Class<?> destElementType, LRContext context, LRMapping mapping) throws Throwable {
-        Map<?, ?> mapValue = (Map<?, ?>) srcFieldDef.getValue();
-        if (mapValue != null) {
-            Collection<?> valuesCollection = mapValue.values();
-
-            Class<?> destCollectionType = destFieldDef.getType();
-            Object destCollection = getEmbeddedValue(dest, destFieldName, destCollectionType);
-            if (destCollection == null) {
-                destCollection = createCollectionField(destCollectionType);
-                setFieldValue(dest, destFieldName, destCollectionType, destCollection);
-            }
-
-            for (Object collectionElement : valuesCollection) {
-                Object destElement = destElementType.getConstructor().newInstance();
-                merge(collectionElement, fieldValues(collectionElement), destElement, fieldValues(destElement), mapping.get(destFieldName).nestedMapping, context);
-
-                ((Collection) destCollection).add(destElement);
-            }
-        }
-    }
-
-    default void explicitCopyLhsCollectionElementsToRhsMap(Object src, FieldDef srcFieldDef, String srcFieldName, Object dest, String destFieldName, FieldDef destFieldDef, LRMapping mapping, LRContext context) throws Throwable {
+    default void explicitCopyLhsArrayToRhsMap(FieldDef srcFieldDef, String srcFieldName, Object dest, FieldDef destFieldDef, String destFieldName, LRMapping mapping, LRContext context) throws Throwable {
         Class<?> dictionaryType = destFieldDef.getType();
-        Map<Object, Object> destDictionary = (Map<Object, Object>) getEmbeddedValue(dest, destFieldName, dictionaryType);
-        if (destDictionary == null) {
-            destDictionary = (Map<Object, Object>) createDictionaryField(dictionaryType);
-            setFieldValue(dest, destFieldName, dictionaryType, destDictionary);
-        }
 
-        // start mapping from the rhs
-        if (Collection.class.isAssignableFrom(srcFieldDef.getType())) {
-            Collection<?> srcCollectionValue = (Collection<?>) getEmbeddedValue(src, srcFieldName, srcFieldDef.getType());
-            if (srcCollectionValue != null) {
-                for (Object srcElement : srcCollectionValue) {
-                    Class<?> destElementType = mapping.get(destFieldName).destCollectionType;
-                    Object destElement = destElementType.getConstructor().newInstance();
-                    Map<String, FieldDef> srcFieldsMap = fieldValues(srcElement);
+        // start mapping from the source (lhs)
+        Object arrayValue = srcFieldDef.getValue();
+        if (arrayValue != null) {
 
-                    // get dest map key
-                    String keyField = mapping.get(destFieldName).getKeyField();
-                    Object keyValue = getFieldValue(srcElement, keyField, srcFieldsMap.get(keyField).getType());
+            // create dest map
+            Map<Object, Object> destDictionary = (Map<Object, Object>) getEmbeddedValue(dest, destFieldName, dictionaryType);
+            if (destDictionary == null) {
+                destDictionary = (Map<Object, Object>) createDictionaryField(dictionaryType);
+                setFieldValue(dest, destFieldName, dictionaryType, destDictionary);
+            }
 
-                    // merge into map element
-                    merge(srcElement, srcFieldsMap, destElement, fieldValues(destElement), getNestedOrDefault(destFieldName, mapping), context);
+            // loop over source elements
+            int length = Array.getLength(arrayValue);
+            for (int i = 0; i < length; i++) {
+                Object srcElement = Array.get(arrayValue, i);
+                // infer a suitable class type for 'destination element'
+                Class<?> destElementType = getMappedElementType(srcFieldName, mapping, srcElement);
 
-                    //add dest element to dest map
-                    destDictionary.put(keyValue, destElement);
-                }
+                // proceed with mapping
+                Object destElement = destElementType.getConstructor().newInstance();
+                Map<String, FieldDef> srcFieldsMap = fieldValues(srcElement);
+
+                // get dest map key
+                Object keyValue = extractMapKey(srcElement, srcFieldsMap, srcFieldName, mapping);
+
+                // merge into map element
+                merge(srcElement, srcFieldsMap, destElement, fieldValues(destElement), getNestedOrDefault(destFieldName, mapping), context);
+
+                //add dest element to dest map
+                destDictionary.put(keyValue, destElement);
             }
         }
     }
 
-    default void explicitCopyLhsCollectionElementsToRhsArray(Object src, FieldDef srcFieldDef, String srcFieldName, Object dest, FieldDef destFieldDef, String destFieldName, LRMapping mapping, LRContext context) throws Throwable {
-        Class<?> srcCollectionType = srcFieldDef.getType();
-        Collection<?> srcCollectionValue = (Collection<?>) getEmbeddedValue(src, srcFieldName, srcCollectionType);
+    default void explicitCopyLhsCollectionToRhsMap(FieldDef srcFieldDef, String srcFieldName, Object dest, FieldDef destFieldDef, String destFieldName, LRMapping mapping, LRContext context) throws Throwable {
+        Class<?> dictionaryType = destFieldDef.getType();
+
+        // start mapping from the source (lhs)
+        Collection<?> srcCollectionValue = (Collection<?>) srcFieldDef.getValue();
+        if (srcCollectionValue != null) {
+            // create dest map
+            Map<Object, Object> destDictionary = (Map) destFieldDef.getValue();
+            if (destDictionary == null) {
+                destDictionary = (Map<Object, Object>) createDictionaryField(dictionaryType);
+                setFieldValue(dest, destFieldName, dictionaryType, destDictionary);
+            }
+
+            // loop over source elements
+            for (Object srcElement : srcCollectionValue) {
+                // last minute effort to infer a suitable class type for 'destination element'
+                Class<?> destElementType = getMappedElementType(srcFieldName, mapping, srcElement);
+
+                // proceed with mapping
+                Object destElement = destElementType.getConstructor().newInstance();
+                Map<String, FieldDef> srcFieldsMap = fieldValues(srcElement);
+
+                // get dest map key
+                Object keyValue = extractMapKey(srcElement, srcFieldsMap, srcFieldName, mapping);
+
+                // merge into map element
+                merge(srcElement, srcFieldsMap, destElement, fieldValues(destElement), getNestedOrDefault(destFieldName, mapping), context);
+
+                //add dest element to dest map
+                destDictionary.put(keyValue, destElement);
+            }
+        }
+    }
+
+    default void explicitCopyLhsArrayToRhsArray(FieldDef srcFieldDef, String srcFieldName, Object dest, FieldDef destFieldDef, String destFieldName, LRMapping mapping, LRContext context) throws Throwable {
+        Object srcArrayValue = srcFieldDef.getValue();
+
+        if (srcArrayValue != null) {
+            Class<?> destArrayType = destFieldDef.getType();
+            Object destArrayValue = getEmbeddedValue(dest, destFieldName, destArrayType);
+
+            int arrayLength = Array.getLength(srcArrayValue);
+            if (destArrayValue == null) {
+                destArrayValue = Array.newInstance(destFieldDef.getType().componentType(), arrayLength);
+                setFieldValue(dest, destFieldName, destArrayType, destArrayValue);
+            }
+
+            for (int i = 0; i < arrayLength; i++) {
+                Object collectionElement = Array.get(srcArrayValue, i);
+                // last minute effort to infer a suitable class type for 'destination element'
+                Class<?> destElementType = destArrayType.componentType();
+                if (destElementType.isInterface()) {
+                    System.out.printf("The 'destination element type' is not a concrete type. Last minute match will try to use '%s' type\n", collectionElement.getClass());
+                    destElementType = collectionElement.getClass();
+                }
+
+                // proceed with merging
+                Object arrayElement = destElementType.getConstructor().newInstance();
+                merge(collectionElement, fieldValues(collectionElement), arrayElement, fieldValues(arrayElement),
+                        LRMerge.getNestedOrDefault(srcFieldName, mapping), context);
+                Array.set(destArrayValue, i, arrayElement);
+            }
+        }
+    }
+
+    default void explicitCopyLhsCollectionToRhsArray(FieldDef srcFieldDef, String srcFieldName, Object dest, FieldDef destFieldDef, String destFieldName, LRMapping mapping, LRContext context) throws Throwable {
+        Collection<?> srcCollectionValue = (Collection<?>) srcFieldDef.getValue();
 
         if (srcCollectionValue != null) {
             Class<?> destArrayType = destFieldDef.getType();
@@ -618,7 +759,11 @@ public interface LRMerge {
 
             int i = 0;
             for (Object collectionElement : srcCollectionValue) {
-                Object arrayElement = destArrayType.componentType().getConstructor().newInstance();
+                // last minute effort to infer a suitable class type for 'destination element'
+                Class<?> destElementType = getMappedElementType(srcFieldName, mapping, collectionElement);
+
+                // proceed with merging
+                Object arrayElement = destElementType.getConstructor().newInstance();
                 merge(collectionElement, fieldValues(collectionElement), arrayElement, fieldValues(arrayElement),
                         LRMerge.getNestedOrDefault(srcFieldName, mapping), context);
                 Array.set(destArrayValue, i++, arrayElement);
@@ -626,20 +771,22 @@ public interface LRMerge {
         }
     }
 
-    default void explicitCopyLhsCollectionElementsToRhsCollection(FieldDef srcFieldDef, String srcFieldName, Object dest, FieldDef destFieldDef, String destFieldName, Class<?> destElementType, LRMapping mapping, LRContext context) throws Throwable {
+    default void explicitCopyLhsCollectionToRhsCollection(FieldDef srcFieldDef, String srcFieldName, Object dest, FieldDef destFieldDef, String destFieldName, LRMapping mapping, LRContext context) throws Throwable {
         Collection<?> sourceCollection = (Collection<?>) srcFieldDef.getValue();
 
         Class<?> destCollectionType = destFieldDef.getType();
         Object destCollection = createCollectionField(destCollectionType);
 
         for (Object sourceElement : sourceCollection) {
+            // last minute effort to infer a suitable class type for 'destination element'
+            Class<?> destElementType = getMappedElementType(srcFieldName, mapping, sourceElement);
+
+            //proceed with merging
             Object destElement = destElementType.getConstructor().newInstance();
-            merge(sourceElement, fieldValues(sourceElement),
-                    destElement, fieldValues(destElement),
-                    mapping.get(srcFieldName).nestedMapping, context);
+            merge(sourceElement, fieldValues(sourceElement), destElement, fieldValues(destElement), LRMerge.getNestedOrDefault(srcFieldName, mapping), context);
             ((Collection<Object>) destCollection).add(destElement);
         }
-        setFieldValue(dest, destFieldName, srcFieldDef.getType(), destCollection);
+        setFieldValue(dest, destFieldName, destFieldDef.getType(), destCollection);
     }
 
     default void explicitFlattenLhsSingleElementArrayIntoRhsDestination(Object src, FieldDef srcFieldDef, String srcFieldName, Object dest, Map<String, FieldDef> destDef, String destFieldName, LRMapping mapping, LRContext context) throws Throwable {
@@ -707,19 +854,18 @@ public interface LRMerge {
         Class<?> destArrayType = destFieldDef.getType();
         Object destArrayValue = getEmbeddedValue(dest, destFieldName, destArrayType);
 
-        Object arrayElement;
         if (destArrayValue == null) {
             destArrayValue = Array.newInstance(destFieldDef.getType().componentType(), 1);
             setFieldValue(dest, destFieldName, destArrayType, destArrayValue);
-
-            arrayElement = destArrayType.componentType().getConstructor().newInstance();
-            Array.set(destArrayValue, 0, arrayElement);
+            //Add single array element
+            Object singleElement = destArrayType.componentType().getConstructor().newInstance();
+            Array.set(destArrayValue, 0, singleElement);
         }
 
-        arrayElement = Array.get(destArrayValue, 0);
+        Object arrayElement = Array.get(destArrayValue, 0);
 
-        Map<String, FieldDef> subSet = wrapSourceFieldDef(srcFieldDef);
-        merge(src, subSet, arrayElement, fieldValues(arrayElement), nestedMapping, context);
+        Map<String, FieldDef> subFieldDef = wrapSourceFieldDef(srcFieldDef);
+        merge(src, subFieldDef, arrayElement, fieldValues(arrayElement), nestedMapping, context);
     }
 
     default void explicitCopyLhsParentToRhsEmbedded(Object src, FieldDef srcFieldDef, Object dest, FieldDef destFieldDef, String destFieldName, LRMapping nestedMapping, LRContext context) throws Throwable {
@@ -740,7 +886,8 @@ public interface LRMerge {
         for (int i = 0; i < containerSize; i++) {
             Object nestedSrcValue = Array.get(srcFieldDef.getValue(), i);
             if (nestedSrcValue != null) {
-                Object nestedDestValue = componentType.getConstructor().newInstance();
+                Class<?> destElementType = componentType.isInterface() ? nestedSrcValue.getClass() : componentType;
+                Object nestedDestValue = destElementType.getConstructor().newInstance();
                 merge(nestedSrcValue, fieldValues(nestedSrcValue), nestedDestValue, fieldValues(nestedDestValue),
                         LRMapping.init(), context);
                 Array.set(destArray, i, nestedDestValue);

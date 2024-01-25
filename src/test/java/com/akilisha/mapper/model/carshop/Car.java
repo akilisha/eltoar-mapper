@@ -7,5 +7,6 @@ public class Car extends Motorized {
     }
 
     public Car() {
+        super();
     }
 }

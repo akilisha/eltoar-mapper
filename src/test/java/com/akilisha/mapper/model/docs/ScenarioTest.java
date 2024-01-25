@@ -511,7 +511,6 @@ public class ScenarioTest {
         RecordsB newDestArr = new RecordsB();
 
         LRMapping.init()
-                .map("title", "name")
                 .map("tenants", "tenants", Tenant_D.class)
                 .merge(dest, newDestArr);
 

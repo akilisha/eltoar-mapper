@@ -7,5 +7,6 @@ public class Truck extends Motorized {
     }
 
     public Truck() {
+        super();
     }
 }
