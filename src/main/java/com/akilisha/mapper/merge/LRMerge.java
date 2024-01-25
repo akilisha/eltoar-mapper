@@ -263,7 +263,7 @@ public interface LRMerge {
                                     "produced this error to the developers for further review.");
                         } else {
                             throw new RuntimeException("It is very unlikely to end up in this scenario unless the mapping " +
-                                    "process was intentionally botched or sabotaged. Please report the setup which produced " +
+                                    "defined was intentionally botched or sabotaged. Please report the setup which produced " +
                                     "this outcome to the developers for additional review.");
                         }
                     } else {
@@ -281,7 +281,7 @@ public interface LRMerge {
 
                 //Scenario where destination (LHS) fieldName contains a '.' character
                 if (destFieldName.contains(".")) {
-                    // this happens when you have either a 1x1 multiplicity through one of the following
+                    // this happens when you have a relationship with a _1x1_ multiplicity through one of the following
                     //1. embedded element dependency, either LHS or RHS
                     //2. single-element array, either LHS or RHS
 
@@ -294,14 +294,12 @@ public interface LRMerge {
 
                     if (ClassDef.class.isAssignableFrom(destFieldDef.getType())) {
                         explicitCopyLhsParentToRhsEmbedded(src, entry.getValue(), dest, destFieldDef, parent, nestedMapping, context);
-
                         continue;
                     }
 
                     // when RHS contains a single-element array
                     if (destFieldDef.getType().isArray()) {
                         explicitCopyLhsParentToRhsSingleElementArray(src, srcFieldDef, dest, destFieldDef, parent, nestedMapping, context);
-
                         continue;
                     }
 
@@ -309,12 +307,10 @@ public interface LRMerge {
                     if (Collection.class.isAssignableFrom(destFieldDef.getType())) {
                         Class<?> collectionElementType = converter.destCollectionType;
                         explicitCopyLhsParentToRhsSingleElementCollection(src, srcFieldDef, dest, destFieldDef, parent, collectionElementType, nestedMapping, context);
-
                         continue;
                     }
 
                     if (Map.class.isAssignableFrom(destFieldDef.getType())) {
-
                         throw new RuntimeException("This is definitely an unhandled scenario. Please report the usage that " +
                                 "produced this error to the developers for further review.");
                     }
@@ -366,7 +362,6 @@ public interface LRMerge {
                         if (Map.class.isAssignableFrom(srcFieldDef.getType())) {
                             explicitCopyLhsMapValuesElementsToRhsCollection(srcFieldDef, dest, destFieldDef, destFieldName, destElementType, context, mapping);
                         }
-
                         continue;
                     }
 
@@ -378,7 +373,6 @@ public interface LRMerge {
 
                     if (destFieldDef.getType().isArray() && Collection.class.isAssignableFrom(srcFieldDef.getType())) {
                         explicitCopyLhsCollectionElementsToRhsArray(src, srcFieldDef, srcField, dest, destFieldDef, destFieldName, mapping, context);
-
                         continue;
                     }
 
@@ -406,14 +400,12 @@ public interface LRMerge {
                         // 1. if rhs is an array
                         if (destFieldType.isArray()) {
                             explicitCopyLhsMapValuesToRhsArray(srcDictionary, dest, destFieldName, destFieldType, context, mapping);
-
                             continue;
                         }
 
                         // 2. if rhs is a map
                         if (Map.class.isAssignableFrom(destFieldType)) {
                             explicitCopyLhsMapEntriesToRhsMapEntries(srcDictionary, dest, destFieldName, destFieldType, context, mapping);
-
                             continue;
                         }
 
@@ -424,14 +416,12 @@ public interface LRMerge {
                     // rhs is a map
                     if (Map.class.isAssignableFrom(destFieldDef.getType())) {
                         explicitCopyLhsCollectionElementsToRhsMap(src, srcFieldDef, srcField, dest, destFieldName, destFieldDef, mapping, context);
-
                         continue;
                     }
 
                     // enums deserve their own special treatment
                     if (destFieldDef.getType().isEnum()) {
                         setFieldValue(dest, destFieldDef.getName(), destFieldDef.getType(), srcValue);
-
                         continue;
                     }
 
@@ -441,23 +431,23 @@ public interface LRMerge {
                                 ? converter.getEval().apply(srcValue)
                                 : srcValue;
                         setFieldValue(dest, destFieldDef.getName(), destFieldDef.getType(), destValue);
+                        continue;
                     }
                 } else {
                     // this special case happens when the LHS is mapped to a nested object or single-collection-element on the RHS
                     if (ClassDef.class.isAssignableFrom(srcFieldDef.getType())) {
                         explicitFlattenLhsEmbeddedIntoRhsDestination(src, srcFieldDef, srcField, dest, destDef, destFieldName, mapping, context);
-
                         continue;
                     }
 
                     if (Collection.class.isAssignableFrom(srcFieldDef.getType())) {
                         explicitFlattenLhsSingleElementCollectionIntoRhsDestination(src, srcFieldDef, srcField, dest, destDef, destFieldName, mapping, context);
-
                         continue;
                     }
 
                     if (srcFieldDef.getType().isArray()) {
                         explicitFlattenLhsSingleElementArrayIntoRhsDestination(src, srcFieldDef, srcField, dest, destDef, destFieldName, mapping, context);
+                        continue;
                     }
                 }
                 continue;
