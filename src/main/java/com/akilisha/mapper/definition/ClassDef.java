@@ -71,6 +71,7 @@ public class ClassDef extends ClassVisitor {
 
     public static ClassDef newClassDef(Class<?> target) {
         try {
+            System.out.printf("creating new class def for - %s\n", target.getName());
             ClassDef cv1 = new ClassDef(target);
             ClassReader cr = new ClassReader(target.getName());
             cr.accept(cv1, 0);

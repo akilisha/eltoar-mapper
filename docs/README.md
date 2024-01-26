@@ -2,20 +2,20 @@
 
 Fast and lightweight mapper for copying properties between data objects. The library does not require additional
 implementation of interfaces or extending base classes to be able to take advantage of, and most importantly, it avoids
-relying on the reflection API.
+relying heavily on the reflection API.
 
 ## Mapping Scenarios
 
-In typed programming languages, there are some two pieces of information that are of paramount significance when
-examining any piece of data.
+In oo programming languages with strong typing, there are two pieces of information that are significantly important
+when examining any piece of data.
 
 1. the __name__ associated to a data property (the name of a field in an object)
 2. the __data type__ associated with a data property (the size of data which the property can hold)
 
 Now, when copying the value of one property to another property, it is necessary to have a mapping that will associate
 the source data property (__herein called lhs__) to the corresponding destination data property (__herein called rhs__).
-Without such a mapping, it would be impossible to know what data value from the lsh should be applied to what property
-in the rhs.
+Without such a mapping (either implicit or explicit), it would be impossible to know what data value from the __lsh__
+should be applied to what property in the __rhs__.
 
 Although not always visible, this mapping information is unsurprisingly always available. It can be quickly deduced in
 one of two ways, or a combination of both:
@@ -25,11 +25,11 @@ one of two ways, or a combination of both:
 2. explicitly - mapping information is provided, and it is well-defined for each property, in terms of
     - name of the field
     - data type for the field
-    - multiplicity of the field
+    - multiplicity of the relationship
 
-One of the best ways to understand data mapping scenarios is to first begin with understanding what mismatches you have
-to deal with. This is the approach taken by this library, and the methods available in the mapper are the best way to
-tell this story.
+One of the best ways to understand data mapping scenarios is to first begin with understanding what mismatch scenarios
+you have to deal with. This is the approach taken by the library, and the methods available in the mapper go a long way
+to tell this story.
 
 ### One to one mapping with no mismatch
 
@@ -37,8 +37,13 @@ tell this story.
 LRMapping.init().merge(src, dest)
 ```
 
-This is a best-case-scenario where data is being copied from one object of type _"A"_ to another instance of the
-same type _"B"_. In this use-case, it would be like copying an instance of __Tenant__ to another instance of __Tenant__.
+This is a best-case-scenario where data is being copied from properties in one object of type __A__ to properties in
+another instance:
+
+- of the same type __A__ or
+- of a different type __B__ but having matching properties.
+
+In this use-case, it would be like copying an instance of __Tenant__ to another instance of __Tenant__.
 
 ```java
 public class Rental {

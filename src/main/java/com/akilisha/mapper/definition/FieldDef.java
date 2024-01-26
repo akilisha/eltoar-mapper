@@ -14,13 +14,12 @@ public class FieldDef {
     String name;
     Class<?> type;
     Object value;
-    boolean mapped;
 
     public static FieldDef define(String name, Class<?> type) {
         return define(name, type, null);
     }
 
     public static FieldDef define(String name, Class<?> type, Object value) {
-        return new FieldDef(name, type, value, false);
+        return new FieldDef(name, type, value);
     }
 }

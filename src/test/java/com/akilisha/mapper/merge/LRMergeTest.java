@@ -342,7 +342,7 @@ class LRMergeTest {
     }
 
     @Test
-    @Disabled("detecting a circular dependency needs to be revisited")
+    @Disabled("Enable once the solution for detecting cyclic relationships in in place")
     void verify_mapping_very_simple_cyclic_relations() throws Throwable {
         //parent created with no children
         Parent parent = new Parent("awesome", null);

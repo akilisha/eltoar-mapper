@@ -1,6 +1,7 @@
 package com.akilisha.mapper.merge;
 
 import com.akilisha.mapper.definition.ClassDef;
+import com.akilisha.mapper.definition.ClassDefs;
 import com.akilisha.mapper.definition.FieldDef;
 
 import java.lang.invoke.MethodHandle;
@@ -11,8 +12,10 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 
-import static com.akilisha.mapper.definition.ClassDef.*;
-import static com.akilisha.mapper.merge.LRUtils.*;
+import static com.akilisha.mapper.definition.ClassDef.isJavaType;
+import static com.akilisha.mapper.definition.ClassDef.objectDef;
+import static com.akilisha.mapper.merge.LRUtils.autoConvertNumeric;
+import static com.akilisha.mapper.merge.LRUtils.isMapType;
 
 public interface LRMerge {
 
@@ -199,7 +202,7 @@ public interface LRMerge {
         if (Map.class.isAssignableFrom(src.getClass())) {
             return fieldValues(src, objectDef(src));
         } else {
-            return fieldValues(src, newClassDef(src.getClass()));
+            return fieldValues(src, ClassDefs.cached.get(src.getClass()));
         }
     }
 
@@ -211,14 +214,13 @@ public interface LRMerge {
             Class<?> type = def.getType();
             if (!ClassDef.class.isAssignableFrom(type)) {
                 if (isJavaType(type)) {
-                    def.setValue(getFieldValue(src, key, type));
-                    fields.put(key, def);
-                    continue;
+                    fields.put(key, FieldDef.define(def.getName(), def.getType(), getFieldValue(src, key, type)));
                 } else {
-                    def.setValue(getEmbeddedValue(src, key, type));
+                    fields.put(key, FieldDef.define(def.getName(), def.getType(), getEmbeddedValue(src, key, type)));
                 }
+                continue;
             }
-            fields.put(key, def);
+            fields.put(key, FieldDef.define(def.getName(), def.getType(), def.getValue()));
         }
         return fields;
     }

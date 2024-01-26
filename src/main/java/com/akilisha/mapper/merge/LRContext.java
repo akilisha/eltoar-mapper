@@ -1,60 +1,60 @@
 package com.akilisha.mapper.merge;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.Comparator;
+import java.util.Objects;
+import java.util.TreeSet;
 
-public class LRContext extends HashMap<Integer, LRContext.LREdge> {
-
-    public void addHash(int hash) {
-        computeIfAbsent(hash, LREdge::new);
-    }
-
-    public void addEdge(int parent, String child, String field) {
-        if (field != null) {
-            addHash(parent);
-            get(parent).fields.add(new LRNode(parent, child, field));
-        }
+public class LRContext extends TreeSet<LRContext.LREdge> {
+    public LRContext() {
+        super(new LREdgeComparator());
     }
 
     public void trace(Object parent, Object child, String field) {
         int parentHash = System.identityHashCode(parent);
-        if (containsKey(parentHash)) {
-            String error = get(parentHash).getFields().stream().filter(f -> f.getParent() == parentHash)
-                    .findFirst().map(f -> String.format("Detected cycle from parent '%s' to child '%s' on the field '%s'",
-                            parent.getClass().getSimpleName(), f.getChild(), f.getField())).orElse(
-                            String.format("Detected cycle - trying to map %s again before the original mapping ic completed",
-                                    parent
-                                            .getClass().getSimpleName()));
+        System.out.printf("hash - %d, class - %s, child - %s, field - %s\n", parentHash, parent.getClass().getName(), child.getClass().getName(), field);
+        LREdge edge = new LREdge(parentHash, parent.getClass(), child.getClass(), field);
+
+        if (contains(edge)) {
+            String error = String.format("Detected cycle from parent '%s' to child '%s' on the field '%s'",
+                    parent.getClass().getName(), child.getClass().getName(), field);
             throw new RuntimeException(error);
+
+        } else {
+            add(edge);
         }
-        //ok, looking good
-        addEdge(parentHash, child.getClass().getName(), field);
     }
 
     @Getter
     @Setter
     @NoArgsConstructor
     @AllArgsConstructor
+    @EqualsAndHashCode
     public static class LREdge {
 
-        final List<LRNode> fields = new LinkedList<>();
-        int parent;
+        int hash;
+        Class<?> parent;
+        Class<?> child;
+        String field;
     }
 
-    @Getter
-    @Setter
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class LRNode {
+    public static class LREdgeComparator implements Comparator<LREdge> {
 
-        int parent;
-        String child;
-        String field;
+        @Override
+        public int compare(LREdge o1, LREdge o2) {
+            if (o1 == o2) return 0;
+
+            if (o1.hash < o2.hash) return -1;
+            if (o1.hash > o2.hash) return 1;
+
+            int parentCompare = Objects.compare(o1.parent, o2.parent, Comparator.comparing((Class<?> x) -> x.toString()));
+            if (parentCompare != 0) return parentCompare;
+
+            int childCompare = Objects.compare(o1.parent, o2.parent, Comparator.comparing((Class<?> x) -> x.toString()));
+            if (childCompare != 0) return childCompare;
+
+            return Objects.requireNonNullElse(o1.field, "").compareTo(Objects.requireNonNullElse(o2.field, ""));
+        }
     }
 }
