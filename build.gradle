@@ -31,6 +31,9 @@ dependencies {
     compileOnly 'org.projectlombok:lombok:1.18.30'
     annotationProcessor 'org.projectlombok:lombok:1.18.30'
 
+    // json
+    testImplementation 'com.google.code.gson:gson:2.10.1'
+
     //javapoet
     testImplementation 'com.squareup:javapoet:1.13.0'
 

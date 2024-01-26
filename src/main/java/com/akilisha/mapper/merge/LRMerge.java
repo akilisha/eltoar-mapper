@@ -12,7 +12,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 
 import static com.akilisha.mapper.definition.ClassDef.*;
-import static com.akilisha.mapper.merge.LRUtils.isMapType;
+import static com.akilisha.mapper.merge.LRUtils.*;
 
 public interface LRMerge {
 
@@ -136,17 +136,28 @@ public interface LRMerge {
                 type == Byte.class || type == Boolean.class);
     }
 
-    static void setJavaTypeValue(Object src, FieldDef srcFieldDef, Object dest, FieldDef destFieldDef) throws Throwable {
+    static void setJavaTypeValue(FieldDef srcFieldDef, Object dest, FieldDef destFieldDef) throws Throwable {
         Class<?> srcType = srcFieldDef.getType();
         Class<?> destType = destFieldDef.getType();
 
+        // if boxed/unboxed types match, all is good
         if (unboxedMatch(srcType, destType)) {
-            Object srcValue = getFieldValue(src, srcFieldDef.getName(), srcType);
+            Object srcValue = srcFieldDef.getValue();
             setFieldValue(dest, srcFieldDef.getName(), destType, srcValue);
-        } else {
-            Object destValue = destFieldDef.getValue();
-            setFieldValue(dest, destFieldDef.getName(), destType, destValue);
+            return;
         }
+
+        //try another way
+        Object converted = autoConvertNumeric(srcFieldDef.getValue(), srcType, destType);
+        if (converted != null) {
+            setFieldValue(dest, srcFieldDef.getName(), destType, converted);
+            return;
+        }
+
+        // ok, last ditch effort
+        Object destValue = destFieldDef.getValue();
+        setFieldValue(dest, destFieldDef.getName(), destType, destValue);
+
     }
 
     static Object extractMapKey(Object srcElement, Map<String, FieldDef> srcFieldsMap, String srcFieldName, LRMapping mapping) throws Throwable {
@@ -263,7 +274,7 @@ public interface LRMerge {
                             }
 
                             if (Collection.class.isAssignableFrom(destFieldDef.getType())) {
-                                implicitCopyLhsCollectionToRhsCollection(src, srcFieldDef, dest, destFieldDef, context);
+                                implicitCopyLhsCollectionToRhsCollection(srcFieldDef, dest, destFieldDef, context);
                                 continue;
                             }
 
@@ -291,7 +302,7 @@ public interface LRMerge {
 
                             // this needs to come at the end of this section
                             if (isJavaType(destFieldDef.getType())) {
-                                setJavaTypeValue(src, srcFieldDef, dest, destFieldDef);
+                                setJavaTypeValue(srcFieldDef, dest, destFieldDef);
                                 continue;
                             }
 
@@ -482,12 +493,12 @@ public interface LRMerge {
                     }
 
                     if (Collection.class.isAssignableFrom(srcFieldDef.getType())) {
-                        explicitFlattenLhsSingleElementCollectionIntoRhsDestination(src, srcFieldDef, srcField, dest, destDef, destFieldName, mapping, context);
+                        explicitFlattenLhsSingleElementCollectionIntoRhsDestination(srcFieldDef, srcField, dest, destDef, destFieldName, mapping, context);
                         continue;
                     }
 
                     if (srcFieldDef.getType().isArray()) {
-                        explicitFlattenLhsSingleElementArrayIntoRhsDestination(src, srcFieldDef, srcField, dest, destDef, destFieldName, mapping, context);
+                        explicitFlattenLhsSingleElementArrayIntoRhsDestination(srcFieldDef, dest, destDef, destFieldName, mapping, context);
                         continue;
                     }
 
@@ -550,10 +561,10 @@ public interface LRMerge {
         }
     }
 
-    default void implicitCopyLhsCollectionToRhsCollection(Object src, FieldDef srcFieldDef, Object dest, FieldDef destFieldDef, LRContext context) throws Throwable {
+    default void implicitCopyLhsCollectionToRhsCollection(FieldDef srcFieldDef, Object dest, FieldDef destFieldDef, LRContext context) throws Throwable {
         Class<?> collectionElementType = destFieldDef.getType();
 
-        Object srcCollection = getEmbeddedValue(src, srcFieldDef.getName(), collectionElementType);
+        Object srcCollection = srcFieldDef.getValue();
         if (srcCollection != null) {
 
             Object destCollection = getEmbeddedValue(dest, destFieldDef.getName(), collectionElementType);
@@ -789,19 +800,18 @@ public interface LRMerge {
         setFieldValue(dest, destFieldName, destFieldDef.getType(), destCollection);
     }
 
-    default void explicitFlattenLhsSingleElementArrayIntoRhsDestination(Object src, FieldDef srcFieldDef, String srcFieldName, Object dest, Map<String, FieldDef> destDef, String destFieldName, LRMapping mapping, LRContext context) throws Throwable {
+    default void explicitFlattenLhsSingleElementArrayIntoRhsDestination(FieldDef srcFieldDef, Object dest, Map<String, FieldDef> destDef, String destFieldName, LRMapping mapping, LRContext context) throws Throwable {
         LRMapping nestedMapping = getNestedOrDefault(destFieldName, mapping);
-        Class<?> srcArrayType = srcFieldDef.getType();
-        Object srcArrayValue = getEmbeddedValue(src, srcFieldName, srcArrayType);
+        Object srcArrayValue = srcFieldDef.getValue();
 
         Object arrayElement = Array.get(srcArrayValue, 0);
         merge(arrayElement, fieldValues(arrayElement), dest, destDef, nestedMapping, context);
     }
 
-    default void explicitFlattenLhsSingleElementCollectionIntoRhsDestination(Object src, FieldDef srcFieldDef, String srcFieldName, Object dest, Map<String, FieldDef> destDef, String destFieldName, LRMapping mapping, LRContext context) throws Throwable {
+    default void explicitFlattenLhsSingleElementCollectionIntoRhsDestination(FieldDef srcFieldDef, String srcFieldName, Object dest, Map<String, FieldDef> destDef, String destFieldName, LRMapping mapping, LRContext context) throws Throwable {
         LRMapping nestedMapping = getNestedOrDefault(destFieldName, mapping);
         Class<?> srcNestedClassType = mapping.get(destFieldName).collectionType;
-        Collection<?> nestedCollectionValue = (Collection<?>) getEmbeddedValue(src, srcFieldName, srcFieldDef.getType());
+        Collection<?> nestedCollectionValue = (Collection<?>) srcFieldDef.getValue();
 
         Object srcCollectionElement = null;
         if (!nestedCollectionValue.isEmpty()) {
@@ -909,14 +919,15 @@ public interface LRMerge {
 
     default void implicitCopyLhsEmbeddedToRhsEmbedded(Object src, FieldDef srcFieldDef, Object dest, FieldDef destFieldDef, String srcField, LRContext context) throws Throwable {
         ClassDef srcEmbeddedDef = (ClassDef) srcFieldDef.getValue();
-        Class<?> srcEmbeddedClassType = srcEmbeddedDef.getType();
+        Class<?> srcEmbeddedType = srcEmbeddedDef.getType();
+        Object embeddedSrcValue = getEmbeddedValue(src, srcField, srcEmbeddedType);
 
-        Object embeddedSrcValue = getEmbeddedValue(src, srcField, srcEmbeddedClassType);
-        Object embeddedDestValue = srcEmbeddedClassType.getConstructor().newInstance();
         ClassDef destEmbeddedDef = (ClassDef) destFieldDef.getValue();
+        Class<?> destEmbeddedType = Objects.requireNonNullElse(destEmbeddedDef.getType(), srcEmbeddedType);
+        Object embeddedDestValue = destEmbeddedType.getConstructor().newInstance();
         if (embeddedSrcValue != null) {
             merge(embeddedSrcValue, fieldValues(embeddedSrcValue), embeddedDestValue, destEmbeddedDef.getFields(), LRMapping.init(), context);
-            setFieldValue(dest, destFieldDef.getName(), srcEmbeddedClassType, embeddedDestValue);
+            setFieldValue(dest, destFieldDef.getName(), destEmbeddedType, embeddedDestValue);
         }
     }
 }
