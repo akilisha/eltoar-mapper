@@ -8,7 +8,7 @@ import org.objectweb.asm.FieldVisitor;
 
 import java.io.IOException;
 import java.util.Collection;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
@@ -22,7 +22,7 @@ import static org.objectweb.asm.Opcodes.ASM9;
 public class ClassDef extends ClassVisitor {
 
     final Class<?> type;
-    final Map<String, FieldDef> fields = new HashMap<>();
+    final Map<String, FieldDef> fields = new LinkedHashMap<>();
 
     public ClassDef(Class<?> type) {
         super(ASM9);
@@ -103,7 +103,7 @@ public class ClassDef extends ClassVisitor {
             throw new RuntimeException("Cannot inspect a list of array for fields. Try to inspect the collection or " +
                     "array elements individually instead");
         } else {
-            return newClassDef(targetType);
+            return ClassDefs.cached.get(targetType);
         }
     }
 
@@ -112,7 +112,7 @@ public class ClassDef extends ClassVisitor {
         if (superName != null && Set.of("java/", "javax/", "sun/", "com/sun/").stream().noneMatch(superName::startsWith)) {
             try {
                 Class<?> superClass = Class.forName(superName.replace("/", "."));
-                ClassDef def = newClassDef(superClass);
+                ClassDef def = ClassDefs.cached.get(superClass);
                 this.fields.putAll(def.fields);
             } catch (ClassNotFoundException e) {
                 throw new RuntimeException(e);
@@ -128,7 +128,7 @@ public class ClassDef extends ClassVisitor {
         System.out.printf("access: %d, name: %s, descriptor: %s, signature: %s, type: %s\n", access, name, descriptor, signature, fieldType);
         this.fields.put(name, FieldDef.define(name, fieldType));
         if (!(isJavaType(fieldType) || fieldType.isArray() || fieldType.isEnum() || fieldType.isInterface() || fieldType.isHidden())) {
-            ClassDef def = newClassDef(fieldType);
+            ClassDef def = ClassDefs.cached.get(fieldType);
             this.fields.put(name, FieldDef.define(name, ClassDef.class, def));
         }
 

@@ -1,8 +1,8 @@
 package com.akilisha.mapper.definition;
 
-import java.util.HashMap;
+import java.util.concurrent.ConcurrentHashMap;
 
-public class ClassDefs extends HashMap<Class<?>, ClassDef> {
+public class ClassDefs extends ConcurrentHashMap<Class<?>, ClassDef> {
 
     public static ClassDefs cached = new ClassDefs();
 

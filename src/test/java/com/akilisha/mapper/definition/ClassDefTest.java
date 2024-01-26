@@ -8,7 +8,6 @@ import org.objectweb.asm.ClassReader;
 
 import java.io.IOException;
 
-import static com.akilisha.mapper.definition.ClassDef.newClassDef;
 import static org.assertj.core.api.Assertions.assertThat;
 
 class ClassDefTest {
@@ -43,7 +42,7 @@ class ClassDefTest {
 
     @Test
     void verify_can_handle_objects_having_recursive_references() throws IOException {
-        ClassDef def = newClassDef(Movie.class);
+        ClassDef def = ClassDefs.cached.get(Movie.class);
 
         assertThat(def.fields).hasSize(5);
 

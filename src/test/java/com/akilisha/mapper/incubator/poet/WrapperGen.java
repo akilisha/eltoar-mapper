@@ -8,7 +8,7 @@ import javax.lang.model.element.Modifier;
 import java.io.IOException;
 import java.lang.reflect.Type;
 import java.nio.file.Path;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 import static com.akilisha.mapper.definition.ClassDef.detectType;
@@ -22,7 +22,7 @@ public class WrapperGen extends ClassVisitor {
     final Class<?> genericClassType;
     JavaFile javaFile;
     MethodSpec constructor;
-    Map<String, MethodSpec> accessors = new HashMap<>();
+    Map<String, MethodSpec> accessors = new LinkedHashMap<>();
     String genericClassName;
     String wrapperClassName;
     String packageName;

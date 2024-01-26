@@ -43,7 +43,7 @@ class LRMergeTest {
 
     @Test
     public void basic_test_to_dest_between_map_and_model_object() throws Throwable {
-        Map<String, Object> src = new HashMap<>();
+        Map<String, Object> src = new LinkedHashMap<>();
         src.put("number", "123");
         src.put("majina", "jimna rishi");
         src.put("mshahara", "123456");
@@ -68,7 +68,7 @@ class LRMergeTest {
 
     @Test
     public void basic_test_to_dest_between_map_with_nested_entities_and_a_model_object() throws Throwable {
-        Map<String, Object> src = new HashMap<>();
+        Map<String, Object> src = new LinkedHashMap<>();
         src.put("id", "123");
         src.put("name", "jimna rishi");
         src.put("perm", true);
@@ -394,14 +394,14 @@ class LRMergeTest {
                 Map.of(1, new Tour("Dallas", "TX"), 2, new Tour("Denver", "CO"), 3, new Tour("Cheyenne", "WY")));
         Person5 johnS = new Person5(124L, "John", "Singleton", Set.of(new Phone1(true, "459-343-5657")), new Hobby[]{rollerSkating}, "Hossier", "IN",
                 Map.of(1, new Tour("Athens", "OH"), 2, new Tour("Georgetown", "KY"), 3, new Tour("Little Rock", "AK")));
-        Actor timR = new Actor(221L, "Tim", "Robbins", Set.of(new Phone("cell", "344-554-5444")), Gender.M, "Fishport", "AL", new HashMap<>(), new HashSet<>(), new Hobby[]{iceFishing});
-        Actor morganF = new Actor(222L, "Morgan", "Freeman", Set.of(new Phone("cell", "455-289-2755")), Gender.M, "Gatorville", "MS", new HashMap<>(), new HashSet<>(), new Hobby[]{sailBoating});
-        Actor bobG = new Actor(223L, "Bob", "Gunton", Set.of(new Phone("home", "582-594-4567")), Gender.M, "Atlanta", "GA", new HashMap<>(), new HashSet<>(), new Hobby[]{windSurfing});
-        Actor clancyB = new Actor(224L, "Clancy", "Brown", Set.of(new Phone("work", "899-523-2231")), Gender.M, "Athens", "OH", new HashMap<>(), new HashSet<>(), new Hobby[]{rollerSkating});
-        Actor jessicaT = new Actor(226L, "Jessica", "Tandy", Set.of(new Phone("work", "123-453-9854")), Gender.F, "Miami", "FL", new HashMap<>(), new HashSet<>(), new Hobby[]{storyWriting});
-        Actor pattiL = new Actor(227L, "Patti", "LuPone", Set.of(new Phone("work", "467-236-9854")), Gender.F, "Jeezville", "MN", new HashMap<>(), new HashSet<>(), new Hobby[]{sailBoating});
-        Actor estherR = new Actor(228L, "Esther", "Rolle", Set.of(new Phone("cell", "592-398-2983")), Gender.F, "horseville", "MT", new HashMap<>(), new HashSet<>(), new Hobby[]{horseRiding});
-        Actor donC = new Actor(229L, "Don", "Cheadle", Set.of(new Phone("cell", "983-876-3422")), Gender.M, "cornville", "IA", new HashMap<>(), new HashSet<>(), new Hobby[]{horseRiding});
+        Actor timR = new Actor(221L, "Tim", "Robbins", Set.of(new Phone("cell", "344-554-5444")), Gender.M, "Fishport", "AL", new LinkedHashMap<>(), new HashSet<>(), new Hobby[]{iceFishing});
+        Actor morganF = new Actor(222L, "Morgan", "Freeman", Set.of(new Phone("cell", "455-289-2755")), Gender.M, "Gatorville", "MS", new LinkedHashMap<>(), new HashSet<>(), new Hobby[]{sailBoating});
+        Actor bobG = new Actor(223L, "Bob", "Gunton", Set.of(new Phone("home", "582-594-4567")), Gender.M, "Atlanta", "GA", new LinkedHashMap<>(), new HashSet<>(), new Hobby[]{windSurfing});
+        Actor clancyB = new Actor(224L, "Clancy", "Brown", Set.of(new Phone("work", "899-523-2231")), Gender.M, "Athens", "OH", new LinkedHashMap<>(), new HashSet<>(), new Hobby[]{rollerSkating});
+        Actor jessicaT = new Actor(226L, "Jessica", "Tandy", Set.of(new Phone("work", "123-453-9854")), Gender.F, "Miami", "FL", new LinkedHashMap<>(), new HashSet<>(), new Hobby[]{storyWriting});
+        Actor pattiL = new Actor(227L, "Patti", "LuPone", Set.of(new Phone("work", "467-236-9854")), Gender.F, "Jeezville", "MN", new LinkedHashMap<>(), new HashSet<>(), new Hobby[]{sailBoating});
+        Actor estherR = new Actor(228L, "Esther", "Rolle", Set.of(new Phone("cell", "592-398-2983")), Gender.F, "horseville", "MT", new LinkedHashMap<>(), new HashSet<>(), new Hobby[]{horseRiding});
+        Actor donC = new Actor(229L, "Don", "Cheadle", Set.of(new Phone("cell", "983-876-3422")), Gender.M, "cornville", "IA", new LinkedHashMap<>(), new HashSet<>(), new Hobby[]{horseRiding});
         Movie shawShank = new Movie("The Shawshank Redemption", LocalDate.ofYearDay(1998, 1), Set.of(timR, morganF, bobG, clancyB, estherR), 4.9f, new Person5[]{frankD});
         Movie missDaisy = new Movie("Driving Miss Daisy", LocalDate.ofYearDay(1999, 1), Set.of(morganF, jessicaT, pattiL, estherR), 7.9f, new Person5[]{bruceB});
         Movie rosewood = new Movie("Rosewood", LocalDate.ofYearDay(1999, 1), Set.of(estherR, donC), 7.9f, new Person5[]{johnS});
@@ -439,7 +439,7 @@ class LRMergeTest {
 
     @Test
     void test_getting_field_values_from_basic_map() throws Throwable {
-        Map<String, Object> src = new HashMap<>();
+        Map<String, Object> src = new LinkedHashMap<>();
         src.put("number", "123");
         src.put("majina", "jimna rishi");
         src.put("mshahara", "123456");

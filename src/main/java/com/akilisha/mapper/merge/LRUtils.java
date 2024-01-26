@@ -2,8 +2,8 @@ package com.akilisha.mapper.merge;
 
 import java.math.BigDecimal;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -12,7 +12,7 @@ public class LRUtils {
     public static final Map<Class<?>, Class<?>> WRAPPER_TYPE_MAP;
 
     static {
-        WRAPPER_TYPE_MAP = new HashMap<>(16);
+        WRAPPER_TYPE_MAP = new LinkedHashMap<>(16);
         WRAPPER_TYPE_MAP.put(Integer.class, int.class);
         WRAPPER_TYPE_MAP.put(Byte.class, byte.class);
         WRAPPER_TYPE_MAP.put(Character.class, char.class);
