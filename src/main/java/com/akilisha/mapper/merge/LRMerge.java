@@ -166,7 +166,7 @@ public interface LRMerge {
     }
 
     private static Class<?> bestEffortInferDestElementType(LRPathway<?> converter, FieldDef destFieldDef) {
-        Class<?> destElementType = converter.destCollectionType;
+        Class<?> destElementType = converter.collectionType;
         //last minute effort to infer the destination element type
         if (destElementType == null) {
             System.out.printf("The destination object type is not configured. Last minute match will try to use '%s' type\n", destFieldDef.getType());
@@ -176,7 +176,7 @@ public interface LRMerge {
     }
 
     static Class<?> getMappedElementType(String srcFieldName, LRMapping mapping, Object collectionElement) {
-        Class<?> destElementType = Optional.ofNullable(mapping.get(srcFieldName)).map(o -> o.destCollectionType).orElse(null);
+        Class<?> destElementType = Optional.ofNullable(mapping.get(srcFieldName)).map(o -> o.collectionType).orElse(null);
         if (destElementType == null) {
             System.out.printf("The 'destination element type' is not available. Last minute match will try to use '%s' type\n", collectionElement.getClass());
             destElementType = collectionElement.getClass();
@@ -341,7 +341,7 @@ public interface LRMerge {
 
                     // when RHS contains a single-element collection
                     if (Collection.class.isAssignableFrom(destFieldDef.getType())) {
-                        Class<?> collectionElementType = pathway.destCollectionType;
+                        Class<?> collectionElementType = pathway.collectionType;
                         explicitCopyLhsParentToRhsSingleElementCollection(src, srcFieldDef, dest, destFieldDef, parent, collectionElementType, nestedMapping, context);
                         continue;
                     }
@@ -363,7 +363,7 @@ public interface LRMerge {
                         Class<?> srcNestedClassType = nestedDef.getType();
 
                         if (isMapType(srcNestedClassType)) {
-                            Class<?> destNestedClassType = mapping.get(destFieldName).destCollectionType;
+                            Class<?> destNestedClassType = mapping.get(destFieldName).collectionType;
                             if (destNestedClassType == null) {
                                 throw new RuntimeException(String.format(
                                         "Expected a collection type mapping for field'%s' in object '%s'", destFieldName, src.getClass().getSimpleName()));
@@ -491,8 +491,8 @@ public interface LRMerge {
                         continue;
                     }
 
-                    throw new RuntimeException(String.format("At this point, you have most likely mapped a " +
-                            "field '%s' in source '%s' to an non-existent field '%s' in destination '%s'.", srcField, src.getClass().getName(), destFieldName, dest.getClass().getName()));
+                    throw new RuntimeException(String.format("At this point, you have most likely mapped a field '%s' " +
+                            "in src object '%s' to an non-existent field '%s' in dest object '%s'.", srcField, src.getClass().getName(), destFieldName, dest.getClass().getName()));
                 }
                 continue;
             }
@@ -626,7 +626,7 @@ public interface LRMerge {
         }
 
         Map<?, ?> srcDictionary = (Map<?, ?>) srcFieldDef.getValue();
-        Class<?> destElementType = Optional.ofNullable(mapping.get(destFieldName)).map(o -> o.destCollectionType).orElse(null);
+        Class<?> destElementType = Optional.ofNullable(mapping.get(destFieldName)).map(o -> o.collectionType).orElse(null);
         for (Map.Entry<?, ?> srcEntry : srcDictionary.entrySet()) {
             Object key = srcEntry.getKey();
             if (!isValidMapKey(key)) {
@@ -800,7 +800,7 @@ public interface LRMerge {
 
     default void explicitFlattenLhsSingleElementCollectionIntoRhsDestination(Object src, FieldDef srcFieldDef, String srcFieldName, Object dest, Map<String, FieldDef> destDef, String destFieldName, LRMapping mapping, LRContext context) throws Throwable {
         LRMapping nestedMapping = getNestedOrDefault(destFieldName, mapping);
-        Class<?> srcNestedClassType = mapping.get(destFieldName).destCollectionType;
+        Class<?> srcNestedClassType = mapping.get(destFieldName).collectionType;
         Collection<?> nestedCollectionValue = (Collection<?>) getEmbeddedValue(src, srcFieldName, srcFieldDef.getType());
 
         Object srcCollectionElement = null;

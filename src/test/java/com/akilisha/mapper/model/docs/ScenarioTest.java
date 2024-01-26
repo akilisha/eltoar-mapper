@@ -178,12 +178,13 @@ public class ScenarioTest {
         assertThat(dest.entryCode).isEqualTo((short) 123);
         List<Rental> locations = new ArrayList<>(dest.locations);
         assertThat(locations).hasSize(1);
-        assertThat(locations.get(0).id).isEqualTo(234L);
-        assertThat(locations.get(0).unitNumber).isEqualTo("1001");
-        assertThat(locations.get(0).streetName).isEqualTo("michigan ave");
-        assertThat(locations.get(0).city).isEqualTo("cheboygan");
-        assertThat(locations.get(0).state).isEqualTo("MI");
-        assertThat(locations.get(0).zipCode).isEqualTo("56789");
+        Rental r0 = locations.get(0);
+        assertThat(r0.id).isEqualTo(234L);
+        assertThat(r0.unitNumber).isEqualTo("1001");
+        assertThat(r0.streetName).isEqualTo("michigan ave");
+        assertThat(r0.city).isEqualTo("cheboygan");
+        assertThat(r0.state).isEqualTo("MI");
+        assertThat(r0.zipCode).isEqualTo("56789");
     }
 
     @Test
@@ -240,12 +241,13 @@ public class ScenarioTest {
         assertThat(dest.entryCode).isEqualTo((short) 123);
         List<Rental_E> locations = new ArrayList<>(dest.locations);
         assertThat(locations).hasSize(1);
-        assertThat(locations.get(0).id).isEqualTo(234L);
-        assertThat(locations.get(0).unitNumber).isEqualTo("1001");
-        assertThat(locations.get(0).streetName).isEqualTo("michigan ave");
-        assertThat(locations.get(0).cityInfo.city).isEqualTo("cheboygan");
-        assertThat(locations.get(0).cityInfo.state).isEqualTo("MI");
-        assertThat(locations.get(0).cityInfo.zipCode).isEqualTo("56789");
+        Rental_E r0 = locations.get(0);
+        assertThat(r0.id).isEqualTo(234L);
+        assertThat(r0.unitNumber).isEqualTo("1001");
+        assertThat(r0.streetName).isEqualTo("michigan ave");
+        assertThat(r0.cityInfo.city).isEqualTo("cheboygan");
+        assertThat(r0.cityInfo.state).isEqualTo("MI");
+        assertThat(r0.cityInfo.zipCode).isEqualTo("56789");
     }
 
     @Test
@@ -271,12 +273,13 @@ public class ScenarioTest {
         assertThat(dest.entryCode).isEqualTo((short) 123);
         List<Rental_F> locations = new ArrayList<>(dest.locations);
         assertThat(locations).hasSize(1);
-        assertThat(locations.get(0).id).isEqualTo("234");
-        assertThat(locations.get(0).unitNumber).isEqualTo("1001");
-        assertThat(locations.get(0).streetName).isEqualTo("michigan ave");
-        assertThat(locations.get(0).cityInfo.city).isEqualTo("cheboygan");
-        assertThat(locations.get(0).cityInfo.state).isEqualTo("MI");
-        assertThat(locations.get(0).cityInfo.zipCode).isEqualTo("56789");
+        Rental_F r0 = locations.get(0);
+        assertThat(r0.id).isEqualTo("234");
+        assertThat(r0.unitNumber).isEqualTo("1001");
+        assertThat(r0.streetName).isEqualTo("michigan ave");
+        assertThat(r0.cityInfo.city).isEqualTo("cheboygan");
+        assertThat(r0.cityInfo.state).isEqualTo("MI");
+        assertThat(r0.cityInfo.zipCode).isEqualTo("56789");
     }
 
     @Test
@@ -387,7 +390,7 @@ public class ScenarioTest {
         RecordsB dest = new RecordsB();
         LRMapping.init()
                 .map("name", "title")
-                .map("tenants", Tenant_K.class, "tenants", Tenant_D.class,
+                .map("tenants", "tenants", Tenant_D.class,
                         LRMapping.init()
                                 .map("name", LRMapping.init()
                                         .map("first", "firstName")
@@ -422,7 +425,7 @@ public class ScenarioTest {
         RecordsC dest = new RecordsC();
         LRMapping.init()
                 .map("name", "title")
-                .map("tenants", Tenant_K.class, "tenants", Tenant_D.class, "id",
+                .map("tenants", "tenants", Tenant_D.class, "id",
                         LRMapping.init()
                                 .map("name", LRMapping.init()
                                         .map("first", "firstName")
@@ -466,7 +469,7 @@ public class ScenarioTest {
 
         LRMapping.init()
                 .map("title", "name")
-                .map("tenants", Tenant_D.class, "tenants", Tenant_K.class, LRMapping.init()
+                .map("tenants", "tenants", Tenant_K.class, LRMapping.init()
                         .map("firstName", "name.firstName")
                         .map("lastName", "name.lastName")
                         .map("code", "entryCode", str -> Short.parseShort((String) str))

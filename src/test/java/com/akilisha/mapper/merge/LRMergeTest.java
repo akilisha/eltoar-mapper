@@ -80,7 +80,7 @@ class LRMergeTest {
         //dest values
         LRMapping.init()
                 .map("id", str -> Integer.parseInt((String) str))
-                .map("address", null, null, Address.class, LRMapping.init().map("zip", "zipcode", str -> Integer.parseInt((String) str)))
+                .map("address", null, Address.class, LRMapping.init().map("zip", "zipcode", str -> Integer.parseInt((String) str)))
                 .merge(src, dest);
 
         //assert values
@@ -291,7 +291,7 @@ class LRMergeTest {
         // create mapping
         LRMapping.init()
                 .map("id", "orderId", Object::toString)
-                .map("products", ProductEntity.class, "orderItems", Product.class, LRMapping.init()
+                .map("products", "orderItems", Product.class, LRMapping.init()
                         .map("id", "itemId", Object::toString)
                         .map("product_name", "productName")
                         .map("price", "price", (value) -> BigDecimal.valueOf((double) value))

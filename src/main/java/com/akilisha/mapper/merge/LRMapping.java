@@ -26,69 +26,63 @@ public class LRMapping extends HashMap<String, LRPathway<?>> implements LRMerge 
     }
 
     public LRMapping map(String src, String dest, Class<?> collectionItemType) {
-        this.put(src, new LRPathway<>(dest, null, collectionItemType, null, null, null, null));
+        this.put(src, new LRPathway<>(dest, collectionItemType, null, null, null, null));
         return this;
     }
 
     public <R> LRMapping map(String src, String dest, Class<?> collectionItemType, Function<Object, R> eval) {
-        this.put(src, new LRPathway<>(dest, null, collectionItemType, eval, null, null, null));
-        return this;
-    }
-
-    public LRMapping map(String src, Class<?> collectionType, String dest) {
-        this.put(src, new LRPathway<>(dest, collectionType, null, null, null, null, null));
+        this.put(src, new LRPathway<>(dest, collectionItemType, eval, null, null, null));
         return this;
     }
 
     public LRMapping map(String src) {
-        this.put(src, new LRPathway<>(null, null, null, null, null, null, null));
+        this.put(src, new LRPathway<>(null, null, null, null, null, null));
         return this;
     }
 
     public LRMapping map(String src, String dest, String mapKey) {
-        this.put(src, new LRPathway<>(dest, null, null, null, mapKey, null, null));
+        this.put(src, new LRPathway<>(dest, null, null, mapKey, null, null));
         return this;
     }
 
     public LRMapping map(String src, String dest, String mapKey, LRMapping nestedMapping) {
-        this.put(src, new LRPathway<>(dest, null, null, null, mapKey, null, nestedMapping));
+        this.put(src, new LRPathway<>(dest, null, null, mapKey, null, nestedMapping));
         return this;
     }
 
-    public <K>LRMapping map(String src, String dest, Supplier<K> mapKey) {
+    public <K> LRMapping map(String src, String dest, Supplier<K> mapKey) {
         this.put(src, new LRPathway<>(dest, null, null, null, mapKey, null));
         return this;
     }
 
-    public <K>LRMapping map(String src, String dest, Supplier<K> mapKey, LRMapping nestedMapping) {
+    public <K> LRMapping map(String src, String dest, Supplier<K> mapKey, LRMapping nestedMapping) {
         this.put(src, new LRPathway<>(dest, null, null, null, mapKey, nestedMapping));
         return this;
     }
 
     public LRMapping map(String src, LRMapping nestedMapping) {
-        this.put(src, new LRPathway<>(null, null, null, null, null, null, nestedMapping));
+        this.put(src, new LRPathway<>(null, null, null, null, null, nestedMapping));
         return this;
     }
 
-    public LRMapping map(String src, Class<?> collectionType, LRMapping nestedMapping) {
-        this.put(src, new LRPathway<>(null, null, collectionType, null, null, null, nestedMapping));
+    public LRMapping map(String src, Class<?> collectionItemType, LRMapping nestedMapping) {
+        this.put(src, new LRPathway<>(null, collectionItemType, null, null, null, nestedMapping));
         return this;
     }
 
-    public LRMapping map(String src, Class<?> srcCollectionType, String dest, Class<?> destCollectionType, LRMapping collectionTypeMapping) {
-        this.put(src, new LRPathway<>(dest, srcCollectionType, destCollectionType, null, null, null, collectionTypeMapping));
+    public LRMapping map(String src, String dest, Class<?> collectionItemType, LRMapping nestedMapping) {
+        this.put(src, new LRPathway<>(dest, collectionItemType, null, null, null, nestedMapping));
         return this;
     }
 
-    public LRMapping map(String src, Class<?> srcCollectionType, String dest, Class<?> destCollectionType, String keyField, LRMapping collectionTypeMapping) {
-        this.put(src, new LRPathway<>(dest, srcCollectionType, destCollectionType, null, keyField, null, collectionTypeMapping));
+    public LRMapping map(String src, String dest, Class<?> collectionItemType, String keyField, LRMapping nestedMapping) {
+        this.put(src, new LRPathway<>(dest, collectionItemType, null, keyField, null, nestedMapping));
         return this;
     }
 
     public LRMapping copy(String src, String fieldName, LRPathway<?> converter) {
         put(src, new LRPathway<>(fieldName,
-                converter.srcCollectionType,
-                converter.destCollectionType,
+                converter.collectionType,
                 converter.converter,
                 converter.keyField, null, this));
         return this;

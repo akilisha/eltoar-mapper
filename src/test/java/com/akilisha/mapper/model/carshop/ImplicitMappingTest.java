@@ -1,7 +1,6 @@
 package com.akilisha.mapper.model.carshop;
 
 import com.akilisha.mapper.merge.LRMapping;
-import com.akilisha.mapper.model.docs.Rental;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigInteger;
@@ -280,7 +279,7 @@ public class ImplicitMappingTest {
         Vehicle mazda = new Car("mazda", "c60", "sport", null, null, null);
         Seller src = new Seller("mr fixer", null, List.of(mazda), null, null);
         Seller dest = new Seller();
-        LRMapping.init().map("trucks", "bikers" ).merge(src, dest);
+        LRMapping.init().map("trucks", "bikers").merge(src, dest);
 
         assertThat(dest.title).isEqualTo("mr fixer");
         assertThat(dest.bikers).hasSize(1);
@@ -301,7 +300,7 @@ public class ImplicitMappingTest {
         Vehicle mazda = new Car("mazda", "c60", "sport", null, null, null);
         Seller src = new Seller("mr fixer", null, List.of(mazda), null, null);
         Seller dest = new Seller();
-        LRMapping.init().map("trucks", "rentals" ).merge(src, dest);
+        LRMapping.init().map("trucks", "rentals").merge(src, dest);
 
         assertThat(dest.title).isEqualTo("mr fixer");
         assertThat(dest.rentals).hasSize(1);
@@ -344,7 +343,7 @@ public class ImplicitMappingTest {
         Vehicle mazda = new Car("mazda", "c60", "sport", null, null, null);
         Seller src = new Seller("mr fixer", null, null, new Vehicle[]{mazda}, null);
         Seller dest = new Seller();
-        LRMapping.init().map("rentals", "trucks" ).merge(src, dest);
+        LRMapping.init().map("rentals", "trucks").merge(src, dest);
 
         assertThat(dest.title).isEqualTo("mr fixer");
         assertThat(dest.trucks).hasSize(1);
@@ -365,7 +364,7 @@ public class ImplicitMappingTest {
         Vehicle mazda = new Car("mazda", "c60", "sport", null, null, null);
         Seller src = new Seller("mr fixer", null, null, new Vehicle[]{mazda}, null);
         Seller dest = new Seller();
-        LRMapping.init().map("rentals", "bikers" ).merge(src, dest);
+        LRMapping.init().map("rentals", "bikers").merge(src, dest);
 
         assertThat(dest.title).isEqualTo("mr fixer");
         assertThat(dest.bikers).hasSize(1);
