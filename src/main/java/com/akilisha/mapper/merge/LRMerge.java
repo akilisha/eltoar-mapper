@@ -3,6 +3,8 @@ package com.akilisha.mapper.merge;
 import com.akilisha.mapper.definition.ClassDef;
 import com.akilisha.mapper.definition.ClassDefs;
 import com.akilisha.mapper.definition.FieldDef;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
@@ -18,6 +20,7 @@ import static com.akilisha.mapper.definition.ClassDef.objectDef;
 
 public interface LRMerge {
 
+    Logger logger = LoggerFactory.getLogger(LRMerge.class);
     MethodHandles.Lookup lookup = MethodHandles.lookup();
 
     static boolean isMapType(Class<?> type) {
@@ -183,7 +186,6 @@ public interface LRMerge {
         // ok, last ditch effort
         Object destValue = destFieldDef.getValue();
         setFieldValue(dest, destFieldDef.getName(), destType, destValue);
-
     }
 
     static Object extractMapKey(Object srcElement, Map<String, FieldDef> srcFieldsMap, String srcFieldName, LRMapping mapping) throws Throwable {
@@ -206,7 +208,7 @@ public interface LRMerge {
         Class<?> destElementType = converter.collectionType;
         //last minute effort to infer the destination element type
         if (destElementType == null) {
-            System.out.printf("The destination object type is not configured. Last minute match will try to use '%s' type\n", destFieldDef.getType());
+            logger.info("The destination object type is not configured. Last minute match will try to use '{}' type", destFieldDef.getType());
             destElementType = destFieldDef.getType();
         }
         return destElementType;
@@ -215,7 +217,7 @@ public interface LRMerge {
     static Class<?> getMappedElementType(String srcFieldName, LRMapping mapping, Object collectionElement) {
         Class<?> destElementType = Optional.ofNullable(mapping.get(srcFieldName)).map(o -> o.collectionType).orElse(null);
         if (destElementType == null) {
-            System.out.printf("The 'destination element type' is not available. Last minute match will try to use '%s' type\n", collectionElement.getClass());
+            logger.info("The 'destination element type' is not available. Last minute match will try to use '{}' type", collectionElement.getClass());
             destElementType = collectionElement.getClass();
         }
         return destElementType;
@@ -264,7 +266,7 @@ public interface LRMerge {
 
                 // Start with the low-hanging fruits - where there is no explicit mapping
                 // All valid mapping is done relative to the source field, and therefore if an entry is missing, then
-                // there is definitely no valid mapping exists
+                // definitely no valid mapping exists
                 LRPathway<?> pathway = mapping.get(srcField);
                 if (pathway == null) {
                     //using implicit mapping at this point
@@ -338,9 +340,9 @@ public interface LRMerge {
                                     "this outcome to the developers for additional review.");
                         }
                     } else {
-                        System.out.printf("Ignoring property '%s' in '%s'. With no explicit mapping created for this " +
-                                        "property, it's expected that the field '%s' would be available in '%s' but it does " +
-                                        "not exist there either\n",
+                        logger.info("Ignoring property '{}' in '{}'. With no explicit mapping created for this " +
+                                        "property, it's expected that the field '{}' would be available in '{}' but it does " +
+                                        "not exist there either",
                                 srcField, src.getClass().getSimpleName(), srcField, dest.getClass().getSimpleName());
                     }
 
@@ -532,7 +534,7 @@ public interface LRMerge {
                 continue;
             }
 
-            System.out.printf("Skipping field '%s' in class '%s' since it is a null value\n", srcField, src.getClass().getName());
+            logger.info("Skipping field '{}' in class '{}' since it is a null value", srcField, src.getClass().getName());
         }
     }
 
@@ -548,7 +550,7 @@ public interface LRMerge {
                 Object sourceElement = Array.get(sourceArray, i);
                 // last minute effort to infer a suitable class type for 'destination element'
                 if (destElementType == null || destElementType.isInterface()) {
-                    System.out.printf("The 'destination element type' is not available. Last minute match will try to use '%s' type\n", sourceElement.getClass());
+                    logger.info("The 'destination element type' is not available. Last minute match will try to use '{}' type", sourceElement.getClass());
                     destElementType = sourceElement.getClass();
                 }
 
@@ -767,7 +769,7 @@ public interface LRMerge {
                 // last minute effort to infer a suitable class type for 'destination element'
                 Class<?> destElementType = destArrayType.componentType();
                 if (destElementType.isInterface()) {
-                    System.out.printf("The 'destination element type' is not a concrete type. Last minute match will try to use '%s' type\n", collectionElement.getClass());
+                    logger.info("The 'destination element type' is not a concrete type. Last minute match will try to use '{}' type", collectionElement.getClass());
                     destElementType = collectionElement.getClass();
                 }
 

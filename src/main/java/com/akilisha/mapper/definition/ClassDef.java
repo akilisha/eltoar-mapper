@@ -2,6 +2,7 @@ package com.akilisha.mapper.definition;
 
 import lombok.Getter;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.FieldVisitor;
@@ -16,9 +17,9 @@ import java.util.stream.Stream;
 import static com.akilisha.mapper.merge.LRMerge.*;
 import static org.objectweb.asm.Opcodes.ASM9;
 
-
 @Getter
 @Setter
+@Slf4j
 public class ClassDef extends ClassVisitor {
 
     final Class<?> type;
@@ -71,7 +72,7 @@ public class ClassDef extends ClassVisitor {
 
     public static ClassDef newClassDef(Class<?> target) {
         try {
-            System.out.printf("creating new class def for - %s\n", target.getName());
+            log.debug("creating new class def for - {}", target.getName());
             ClassDef cv1 = new ClassDef(target);
             ClassReader cr = new ClassReader(target.getName());
             cr.accept(cv1, 0);
@@ -125,7 +126,7 @@ public class ClassDef extends ClassVisitor {
     public FieldVisitor visitField(int access, String name, String descriptor, String signature, Object value) {
         Class<?> fieldType = detectType(descriptor);
 
-        System.out.printf("access: %d, name: %s, descriptor: %s, signature: %s, type: %s\n", access, name, descriptor, signature, fieldType);
+        log.debug("access: {}, name: {}, descriptor: {}, signature: {}, type: {}\n", access, name, descriptor, signature, fieldType);
         this.fields.put(name, FieldDef.define(name, fieldType));
         if (!(isJavaType(fieldType) || fieldType.isArray() || fieldType.isEnum() || fieldType.isInterface() || fieldType.isHidden())) {
             ClassDef def = ClassDefs.cached.get(fieldType);

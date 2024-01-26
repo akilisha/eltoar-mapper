@@ -6,7 +6,7 @@ relying heavily on the reflection API.
 
 ## Mapping Scenarios
 
-In oo programming languages with strong typing, there are two pieces of information that are significantly important
+In oo programming languages with strong typing, there are two pieces of information that are extremely important
 when examining any piece of data.
 
 1. the __name__ associated to a data property (the name of a field in an object)
@@ -27,9 +27,10 @@ one of two ways, or a combination of both:
     - data type for the field
     - multiplicity of the relationship
 
-One of the best ways to understand data mapping scenarios is to first begin with understanding what mismatch scenarios
-you have to deal with. This is the approach taken by the library, and the methods available in the mapper go a long way
-to tell this story.
+One of the ways to understand data mapping scenarios is to begin with understanding what property mismatch scenarios you
+are dealing with. This is the approach taken by the library, and the methods available in the mapper go a long way to
+tell
+this story.
 
 ### One to one mapping with no mismatch
 
@@ -37,8 +38,8 @@ to tell this story.
 LRMapping.init().merge(src, dest)
 ```
 
-This is a best-case-scenario where data is being copied from properties in one object of type __A__ to properties in
-another instance:
+This is the most straight forward scenario where data is being copied from properties in one object of type __A__ to
+properties in another instance:
 
 - of the same type __A__ or
 - of a different type __B__ but having matching properties.
@@ -75,11 +76,20 @@ LRMapping.init().merge(src, dest);
 
 And just like that, the __dest__ will have values identical to those in __src__.
 
+### Property name is identical
+
+```map(String src)```
+
+This kind of property mapping is equivalent to having none at all. It only serves to explicitly link a __lhs__ property
+to a corresponding property in the __rhs__. If this mapping entry is not defined, then _implicit mapping_ will kick in
+automatically anyway.
+
 ### Property name mismatch
 
 ```map(String src, String dest)```
 
-In this scenario, everything else about a property remains constance except the name not being exactly matched.
+In this scenario, everything else about a property (its type and multiplicity) remains constance except the name not
+being exactly matched.
 
 ```java
 public class Tenant_A {
@@ -112,7 +122,8 @@ We'll get to that soon.
 
 ```map(String src, Function<Object, R> eval)```
 
-In this scenario, everything else about a property remains constance except the data type not being exactly matched.
+In this scenario, everything else about a property (its name and multiplicity) remains the same except the data type
+not being exactly matched.
 
 ```java
 import java.math.BigDecimal;
@@ -143,7 +154,7 @@ LRMapping.init()
 
 ```map(String src, String dest, Function<Object, R> eval)```
 
-In this scenario, both the property name and type as mismatched, but the multiplicity remains the same
+In this scenario, both the names and types of the mapped properties do not match, but the multiplicity remains the same
 
 ```java
 public class Tenant_C {
@@ -444,7 +455,7 @@ LRMapping.init()
 
 ### Property multiplicity mismatch - embedded lhs
 
-```map(String src, Class<?> collectionType, String dest)```
+```map(String src, String dest)```
 
 In some situations, the __embedded entity__ or the __single collection entity__ might be the source of data, which needs
 to be mapped to a flattened model. This is the reverse of the illustrations from the section above.
@@ -541,7 +552,7 @@ LRMapping.init()
 
 ### Property multiplicity mismatch - single collection element on lhs
 
-```map(String src, Class<?> collectionType, LRMapping nestedMapping)```
+```map(String src, LRMapping nestedMapping)```
 
 In a manner similar to the previously illustrated __rhs__ mapping, a __single collection element__ can also be placed
 on the __lhs__ and configured to map into properties on the __rhs__.
@@ -584,7 +595,7 @@ LRMapping.init()
                 .map("first", "firstName")
                 .map("last", "lastName"))
         .map("entryCode", "code", sh -> Short.toString((Short) sh))
-        .map("locations", Rental.class, LRMapping.init()
+        .map("locations", LRMapping.init()
                 .map("id", "unitId")
                 .map("zipCode", "zip"))
         .merge(src, dest);
@@ -622,7 +633,7 @@ LRMapping.init()
                 .map("first", "firstName")
                 .map("last", "lastName"))
         .map("entryCode", "code", sh -> Short.toString((Short) sh))
-        .map("locations", Rental.class, LRMapping.init()
+        .map("locations", LRMapping.init()
                 .map("id", "unitId")
                 .map("zipCode", "zip"))
         .merge(src, dest);
@@ -638,7 +649,7 @@ where properties on the __rhs__ can be resolved. The level of indentation on the
 
 ### Property multiplicity mismatch - collection elements on both lhs and rhs
 
-```map(String src, Class<?> srcCollectionType, String dest, Class<?> destCollectionType, LRMapping collectionTypeMapping)```
+```map(String src, String dest, Class<?> destCollectionType, LRMapping collectionTypeMapping)```
 
 Inevitably, throughout all the previous discussions, this scenario was eventually going to pop up, and so here we are.
 
@@ -668,13 +679,13 @@ RecordsA src = new RecordsA("records from server A", Set.of(k1, k2));
 RecordsC dest = new RecordsC();
 LRMapping.init()
         .map("name", "title")
-        .map("tenants", Tenant_K.class, "tenants", Tenant_D.class,
+        .map("tenants", Tenant_D.class,
                 LRMapping.init()
                         .map("name", LRMapping.init()
                                 .map("first", "firstName")
                                 .map("last", "lastName"))
                         .map("entryCode", "code", sh -> Short.toString((Short) sh))
-                        .map("locations", Rental.class, LRMapping.init()
+                        .map("locations", LRMapping.init()
                                 .map("id", "unitId")
                                 .map("zipCode", "zip")))
         .merge(src, dest);
@@ -682,7 +693,7 @@ LRMapping.init()
 
 ### Property multiplicity mismatch - collection elements on lhs and map on rhs
 
-```LRMapping map(String src, Class<?> srcCollectionType, String dest, Class<?> destCollectionType, String keyField, LRMapping collectionTypeMapping)```
+```LRMapping map(String src, String dest, Class<?> destCollectionType, String keyField, LRMapping collectionTypeMapping)```
 
 The first thing to note when working with a __Map__ property, is that the value of the __Map's__ key attribute can only
 work with a few __SPECIFIC__ types:
@@ -706,11 +717,11 @@ public class RecordsC {
 ```
 
 So how does this affect the mapping? Well, the mapping is actually identical with the previous illustration with one
-small tweak - provide the name of a property in the __source__ object whose value will be the map's key value.
+small tweak—provide the name of a property in the __source__ object whose value will be the map's key value.
 
 The only line that would change is this one:
 
-```.map("tenants", Tenant_K.class, "tenants", Tenant_D.class, "id",```
+```.map("tenants", "Tenant_D.class, "id",```
 
 And the full mapping is shown below
 
@@ -721,13 +732,13 @@ RecordsA src = new RecordsA("records from server A", Set.of(k1, k2));
 RecordsC dest = new RecordsC();
 LRMapping.init()
         .map("name", "title")
-        .map("tenants", Tenant_K.class, "tenants", Tenant_D.class, "id",
+        .map("tenants", Tenant_D.class, "id",
                 LRMapping.init()
                         .map("name", LRMapping.init()
                                 .map("first", "firstName")
                                 .map("last", "lastName"))
                         .map("entryCode", "code", sh -> Short.toString((Short) sh))
-                        .map("locations", Rental.class, LRMapping.init()
+                        .map("locations", LRMapping.init()
                                 .map("id", "unitId")
                                 .map("zipCode", "zip")))
         .merge(src, dest);
@@ -757,3 +768,11 @@ LRMapping.init()
         .merge(dest, newDest);
 ```
 
+### Key supplier when mapping lhs collection to a rhs map
+
+```LRMapping map(String src, String dest, Supplier<K> mapKey, LRMapping nestedMapping)```
+
+This is an alternative method to using a __key field__ to define a property inside an object whose value will double up
+as the map key as well. This is especially important when the data object does not inherently contain a unique field,
+and
+so a key generator can be used to solve this deficiency.

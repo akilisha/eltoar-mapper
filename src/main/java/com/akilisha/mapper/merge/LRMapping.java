@@ -10,6 +10,11 @@ public class LRMapping extends HashMap<String, LRPathway<?>> implements LRMerge 
         return new LRMapping();
     }
 
+    public LRMapping map(String src) {
+        this.put(src, new LRPathway<>(src));
+        return this;
+    }
+
     public LRMapping map(String src, String dest) {
         this.put(src, new LRPathway<>(dest));
         return this;
@@ -32,11 +37,6 @@ public class LRMapping extends HashMap<String, LRPathway<?>> implements LRMerge 
 
     public <R> LRMapping map(String src, String dest, Class<?> collectionItemType, Function<Object, R> eval) {
         this.put(src, new LRPathway<>(dest, collectionItemType, eval, null, null, null));
-        return this;
-    }
-
-    public LRMapping map(String src) {
-        this.put(src, new LRPathway<>(null, null, null, null, null, null));
         return this;
     }
 

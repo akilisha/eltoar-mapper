@@ -1,13 +1,16 @@
 package com.akilisha.mapper.merge;
 
+import lombok.extern.slf4j.Slf4j;
+
 import java.util.*;
 
+@Slf4j
 public class LRContext extends TreeMap<Integer, Map<String, List<String>>> {
 
     public void trace(Object parent, Object child, String field) {
         int parentHash = System.identityHashCode(parent);
         String childName = child.getClass().getName();
-        System.out.printf("\nhash - %d\nparent - %s\nchild - %s, field - %s\n", parentHash, parent.getClass().getName(), childName, field);
+        log.debug("\nhash - {}\nparent - {}\nchild - {}, field - {}\n", parentHash, parent.getClass().getName(), childName, field);
         Map<String, List<String>> children = computeIfAbsent(parentHash, hash -> new LinkedHashMap<>());
 
         List<String> fieldNames;
