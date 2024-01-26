@@ -8,18 +8,41 @@ import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.lang.reflect.Array;
+import java.math.BigDecimal;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 
 import static com.akilisha.mapper.definition.ClassDef.isJavaType;
 import static com.akilisha.mapper.definition.ClassDef.objectDef;
-import static com.akilisha.mapper.merge.LRUtils.autoConvertNumeric;
-import static com.akilisha.mapper.merge.LRUtils.isMapType;
 
 public interface LRMerge {
 
     MethodHandles.Lookup lookup = MethodHandles.lookup();
+
+    static boolean isMapType(Class<?> type) {
+        return Map.class.isAssignableFrom(type);
+    }
+
+    static boolean isCollectionType(Class<?> type) {
+        return Collection.class.isAssignableFrom(type);
+    }
+
+    static boolean isArrayType(Class<?> type) {
+        return type.isArray();
+    }
+
+    static Object autoConvertNumeric(Object input, Class<?> inType, Class<?> outType) {
+        if (Number.class.isAssignableFrom(inType)) {
+            Number value = (Number) input;
+            if (outType.equals(short.class) || outType.equals(Short.class)) return value.shortValue();
+            if (outType.equals(int.class) || outType.equals(Integer.class)) return value.intValue();
+            if (outType.equals(float.class) || outType.equals(Float.class)) return value.floatValue();
+            if (outType.equals(long.class) || outType.equals(Long.class)) return value.longValue();
+            if (outType.equals(BigDecimal.class)) return new BigDecimal(value.toString());
+        }
+        return input;
+    }
 
     static Object createDictionaryField(Class<?> fieldType) {
         if (Map.class.isAssignableFrom(fieldType)) {
@@ -237,8 +260,7 @@ public interface LRMerge {
                 Object srcValue = srcFieldDef.getValue();
 
                 // perform some housekeeping to detect circular dependency
-                // TODO: Fix 'LRContext:trace()' function, and then re-enable test 'LRMergeTest::verify_mapping_very_simple_cyclic_relations'
-                // context.trace(src, dest, Optional.ofNullable(destDef.get(srcField)).map(FieldDef::getName).orElse(null));
+                context.trace(src, dest, Optional.ofNullable(destDef.get(srcField)).map(FieldDef::getName).orElse(srcField));
 
                 // Start with the low-hanging fruits - where there is no explicit mapping
                 // All valid mapping is done relative to the source field, and therefore if an entry is missing, then

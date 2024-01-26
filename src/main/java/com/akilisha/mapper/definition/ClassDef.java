@@ -13,7 +13,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import static com.akilisha.mapper.merge.LRUtils.*;
+import static com.akilisha.mapper.merge.LRMerge.*;
 import static org.objectweb.asm.Opcodes.ASM9;
 
 

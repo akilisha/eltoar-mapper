@@ -12,7 +12,6 @@ import com.akilisha.mapper.model.ecomm.OrderEntity;
 import com.akilisha.mapper.model.ecomm.Product;
 import com.akilisha.mapper.model.ecomm.ProductEntity;
 import com.akilisha.mapper.model.movies.*;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
@@ -342,7 +341,6 @@ class LRMergeTest {
     }
 
     @Test
-    @Disabled("Enable once the solution for detecting cyclic relationships in in place")
     void verify_mapping_very_simple_cyclic_relations() throws Throwable {
         //parent created with no children
         Parent parent = new Parent("awesome", null);
