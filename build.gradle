@@ -1,8 +1,10 @@
 plugins {
     id 'java'
+    id 'java-library'
+    id 'maven-publish'
 }
 
-group = 'com.akilisha.meta'
+group = 'com.akilisha.data'
 version = '1.0-SNAPSHOT'
 
 repositories {
@@ -47,4 +49,16 @@ dependencies {
 
 test {
     useJUnitPlatform()
+}
+
+publishing {
+    publications {
+        maven(MavenPublication) {
+            groupId = 'com.akilisha.mapper'
+            artifactId = 'eltoar'
+            version = '0.0.1-beta'
+
+            from components.java
+        }
+    }
 }

@@ -61,12 +61,12 @@ public class LRMapping extends HashMap<String, LRPathway<?>> implements LRMerge 
     }
 
     public LRMapping map(String src, LRMapping nestedMapping) {
-        this.put(src, new LRPathway<>(null, null, null, null, null, nestedMapping));
+        this.put(src, new LRPathway<>(src, null, null, null, null, nestedMapping));
         return this;
     }
 
     public LRMapping map(String src, Class<?> collectionItemType, LRMapping nestedMapping) {
-        this.put(src, new LRPathway<>(null, collectionItemType, null, null, null, nestedMapping));
+        this.put(src, new LRPathway<>(src, collectionItemType, null, null, null, nestedMapping));
         return this;
     }
 

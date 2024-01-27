@@ -1,8 +1,8 @@
 package com.akilisha.mapper.definition;
 
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.HashMap;
 
-public class ClassDefs extends ConcurrentHashMap<Class<?>, ClassDef> {
+public class ClassDefs extends HashMap<Class<?>, ClassDef> {
 
     public static ClassDefs cached = new ClassDefs();
 
@@ -10,6 +10,9 @@ public class ClassDefs extends ConcurrentHashMap<Class<?>, ClassDef> {
     }
 
     public ClassDef get(Class<?> key) {
-        return computeIfAbsent(key, ClassDef::newClassDef);
+        if (!super.containsKey(key)) {
+            super.put(key, ClassDef.newClassDef(key));
+        }
+        return super.get(key);
     }
 }

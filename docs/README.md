@@ -29,8 +29,7 @@ one of two ways, or a combination of both:
 
 One of the ways to understand data mapping scenarios is to begin with understanding what property mismatch scenarios you
 are dealing with. This is the approach taken by the library, and the methods available in the mapper go a long way to
-tell
-this story.
+tell this story.
 
 ### One to one mapping with no mismatch
 

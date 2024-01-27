@@ -107,6 +107,44 @@ public interface LRMerge {
         }
     }
 
+    static void getFieldValue(Object src, FieldDef srcFieldDef) throws Throwable {
+        Class<?> srcType = srcFieldDef.getType();
+        MethodType getterMethodType = MethodType.methodType(srcType);
+        Object fieldValue;
+
+        if (isJavaType(srcType)) {
+            MethodHandle getterHandler = lookup.findVirtual(src.getClass(), srcFieldDef.getGetter(), getterMethodType);
+            try {
+                fieldValue = getterHandler.invoke(src);
+            } catch (NoSuchMethodException | IllegalAccessException th) {
+                logger.warn("The '{}' class does not have a valid getter for the '{}' property", src.getClass().getSimpleName(), srcFieldDef.getName());
+                try {
+                    fieldValue = getterHandler.invokeWithArguments(src);    //a quick in the jvm when not using a 'getter'
+                } catch (NoSuchMethodException | IllegalAccessException thy) {
+                    logger.warn("At this point, the '{}' object should only be a map, otherwise, things will break", src.getClass().getSimpleName());
+                    fieldValue = ((Map<?, ?>) src).get(srcFieldDef.getName());
+                }
+            }
+            //set field value
+            srcFieldDef.setValue(fieldValue);
+        } else {
+            throw new RuntimeException("This scenario is definitely not anticipated. Please report the usage that " +
+                    "produced this error to the developers for further review.");
+        }
+    }
+
+    static void setFieldValue(Object dest, FieldDef destFieldDef) throws Throwable {
+        Class<?> destType = destFieldDef.getType();
+        MethodType setterMethodType = MethodType.methodType(void.class, destType);
+        MethodHandle setterHandler = lookup.findVirtual(dest.getClass(), destFieldDef.getSetter(), setterMethodType);
+        try {
+            setterHandler.invoke(dest, destFieldDef.getValue());
+        } catch (NoSuchMethodException th) {
+            logger.warn("At this point, the '{}' object should only be a map, otherwise, things will break", dest.getClass().getSimpleName());
+            ((Map) dest).put(destFieldDef.getName(), destFieldDef.getValue());
+        }
+    }
+
     static Object getFieldValue(Object src, String srcField, Class<?> srcType) throws Throwable {
         MethodType getterMethodType = MethodType.methodType(srcType);
         Object fieldValue;
@@ -122,29 +160,41 @@ public interface LRMerge {
                     getterHandler = lookup.findVirtual(src.getClass(), getter, getterMethodType);
                     fieldValue = getterHandler.invoke(src);
                 } catch (NoSuchMethodException | IllegalAccessException thx) {
-                    // at this point, it should only be a map
-                    fieldValue = ((Map<?, ?>) src).get(srcField);
+                    logger.warn("Approaching panic. The '{}' class does not have a valid getter for the '{}' property", src.getClass().getSimpleName(), srcField);
+                    try {
+                        getterHandler = lookup.findVirtual(src.getClass(), srcField, getterMethodType);
+                        fieldValue = getterHandler.invokeWithArguments(src);    //a quirk in the jvm
+                    } catch (NoSuchMethodException | IllegalAccessException thy) {
+                        logger.warn("At this point, the '{}' object should only be a map, otherwise, things will break", src.getClass().getSimpleName());
+                        fieldValue = ((Map<?, ?>) src).get(srcField);
+                    }
                 }
             }
-
             return fieldValue;
         } else {
-            throw new RuntimeException("Expected a java type from the source object. Please report this usage " +
-                    "carshop to the developers for consideration in future releases");
+            throw new RuntimeException("This scenario is definitely not anticipated. Please report the usage that " +
+                    "produced this error to the developers for further review.");
         }
     }
 
     static void setFieldValue(Object dest, String destField, Class<?> destType, Object destValue) throws Throwable {
         MethodType setterMethodType = MethodType.methodType(void.class, destType);
         String setter = "set" + Character.toUpperCase(destField.charAt(0)) + destField.substring(1);
+        MethodHandle setterHandler;
         try {
-            MethodHandle setterHandler = lookup.findVirtual(dest.getClass(), setter, setterMethodType);
+            setterHandler = lookup.findVirtual(dest.getClass(), setter, setterMethodType);
             setterHandler.invoke(dest, destValue);
         } catch (NoSuchMethodException th) {
-            // at this point, it should only be a map
-            setterMethodType = MethodType.methodType(Object.class, Object.class, Object.class);
-            MethodHandle setterHandler = lookup.findVirtual(dest.getClass(), "put", setterMethodType);
-            setterHandler.invoke(dest, destField, destValue);
+            logger.warn("Approaching panic. The '{}' class does not have a valid setter for the '{}' property", dest.getClass().getSimpleName(), destField);
+            try {
+                setterHandler = lookup.findVirtual(dest.getClass(), destField, setterMethodType);
+                setterHandler.invokeWithArguments(dest, destValue);
+            } catch (NoSuchMethodException | IllegalAccessException thy) {
+                logger.warn("At this point, the '{}' object should only be a map, otherwise, things will break", dest.getClass().getSimpleName());
+                setterMethodType = MethodType.methodType(Object.class, Object.class, Object.class);
+                setterHandler = lookup.findVirtual(dest.getClass(), "put", setterMethodType);
+                setterHandler.invoke(dest, destField, destValue);
+            }
         }
     }
 
@@ -350,7 +400,7 @@ public interface LRMerge {
                 }
 
                 //you are now inevitably dealing with explicit mapping
-                String destFieldName = getOrDefault(pathway.fieldName, srcField);
+                String destFieldName = getOrDefault(pathway.fieldName.getName(), srcField);
 
                 //Scenario where destination (LHS) fieldName contains a '.' character
                 if (destFieldName.contains(".")) {
